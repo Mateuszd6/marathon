@@ -5,7 +5,6 @@
 #include <limits.h>
 
 // Unix line ending character.
-#define EOL '\n'
 #define COMMENT_LINE '#'
 
 // Max size of a VALID input line.
@@ -22,13 +21,13 @@ typedef enum operation operation_t;
 
 void printError()
 {
-    fprintf(stderr, "ERROR%c", EOL);
+    fprintf(stderr, "ERROR\n");
 }
 
 // Convert number stored as array of chars into int32.
 int stringToInt32(const char *str, int len)
 {
-    if (len > 10)
+    if (len > 10 || len <= 0)
         return -1;
 
     int res = 0;
@@ -59,6 +58,26 @@ int prefixMatch(const char *text, const char *pattern)
             return 0;
 
     return 1;
+}
+
+int readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
+{
+    int letters_read = 0;
+    while ('0' <= buffer[(* idx_in_buffer) + letters_read]
+        && buffer[(* idx_in_buffer) + letters_read] <= '9')
+    {
+        ++letters_read;
+    }
+
+    int res_converted = stringToInt32(buffer + (* idx_in_buffer), letters_read);
+    (* idx_in_buffer) += letters_read;
+    if (res_converted != -1)
+    {
+        (* result) = res_converted;
+        return 1;
+    }
+
+    return 0;
 }
 
 // Użytkownik o identyfikatorze [parentUserId] dodaje użytkownika o
@@ -135,13 +154,13 @@ int readInputLine()
     case EOF:
         return INPUT_EOF;
 
-    case EOL:
+    case '\n':
         return INPUT_IGNORED_LINE;
 
     // If given line is a comment, just skip to the EOL.
     case COMMENT_LINE:
     {
-        while ((c = getchar()) != EOL)
+        while ((c = getchar()) != '\n')
         {
             // TODO: If c == EOF line is invalid!
             assert(c != EOF);
@@ -160,16 +179,16 @@ int readInputLine()
             input_buffer[index_in_buffer++] = c;
             buffer_size++;
         }
-        while ((c = getchar()) != EOL
+        while ((c = getchar()) != '\n'
             && buffer_size < MAX_INPUT_LINE_LENGTH);
 
-        if (c != EOL)
+        if (c != '\n')
         {
             // MAX_INPUT_LINE_LENGTH is large enough to store any vaild input
             // so the inserted line is not valid.
 
             // Skip to the end of the line and return an input error.
-            while ((c = getchar()) != EOL)
+            while ((c = getchar()) != '\n')
             {
                 // TODO: If c == EOF line is invalid! (It is already!!!!)
                 assert(c != EOF);
@@ -199,7 +218,6 @@ int main()
         }
         else if (read_line_state == INPUT_OK)
         {
-
             int idx_in_buffer = 0;
             while (('A' <= input_buffer[idx_in_buffer] && input_buffer[idx_in_buffer] <= 'Z')
                 || ('a' <= input_buffer[idx_in_buffer] && input_buffer[idx_in_buffer] <= 'z'))
@@ -208,45 +226,31 @@ int main()
             }
 
             // TODO: Handle invalid input.
-            assert(input_buffer[idx_in_buffer] == ' ');
+            if (input_buffer[idx_in_buffer++] != ' ')
+            {
+                // ERROR: Wrong input format; no space after a command.
+                printError();
+                continue;
+            }
 
-            /* while ('0' <= input_buffer[idx_in_buffer] && input_buffer[idx_in_buffer] <= '9') */
-            /* { */
-            /*     ++idx_in_buffer; */
-            /* } */
-
-            /* // TODO: Handle invalid input. */
-            /* assert(input_buffer[idx_in_buffer] == ' '); */
+            // Currently called operation and its arguments.
             operation_t op;
-
+            int args[2];
             if (prefixMatch(input_buffer, "addUser"))
-            {
                 op = ADD_USER;
-                printf("addUser%c", EOL);
-            }
             else if (prefixMatch(input_buffer, "delUser"))
-            {
                 op = DEL_USER;
-                printf("delUser%c", EOL);
-            }
             else if (prefixMatch(input_buffer, "addMovie"))
-            {
                 op = ADD_MOVIE;
-                printf("addMovie%c", EOL);
-            }
             else if (prefixMatch(input_buffer, "delMovie"))
-            {
                 op = DEL_MOVIE;
-                printf("delMovie%c", EOL);
-            }
             else if (prefixMatch(input_buffer, "marathon"))
-            {
                 op = MARATHON;
-                printf("marathon%c", EOL);
-            }
             else
             {
-                assert(!"TODO: Invalid input!");
+                // ERROR: Unrecognized opeartion.
+                printError();
+                continue;
             }
 
             switch (op)
@@ -255,20 +259,36 @@ int main()
             case ADD_MOVIE:
             case DEL_MOVIE:
             case MARATHON:
-                // TODO: READ 2 INTS.
-                break;
+            {
+                // If ANY of the following function fails input is invalid.
+                if (!(readInt32FromBuffer(input_buffer, &idx_in_buffer, args)
+                        && input_buffer[idx_in_buffer++] == ' '
+                        && readInt32FromBuffer(input_buffer, &idx_in_buffer, args+1)
+                        && input_buffer[idx_in_buffer++] == '\0'))
+                {
+                    // ERROR: Invalid input.
+                    printError();
+                    continue;
+                }
+            } break;
 
             case DEL_USER:
-                // TODO: READ 1 INT.
-                break;
+            {
+                // If ANY of the following function fails input is invalid.
+                if (!(readInt32FromBuffer(input_buffer, &idx_in_buffer, args)
+                        && input_buffer[idx_in_buffer++] == '\0'))
+                {
+                    // ERROR: Invalid input.
+                    printError();
+                    continue;
+                }
+            } break;
             }
         }
         else
         {
             assert(!"Unexpected input state!");
         }
-
-        printf("\n\t.\n");
     }
 
     return 0;
