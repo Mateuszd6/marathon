@@ -4,9 +4,11 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h> // for memeset
+#include <assert.h>
 
 #include "linked_list.h"
 #include "tree.h"
+#include "utils.h"
 
 const int MAX_USERS = 65535;
 
@@ -23,7 +25,8 @@ struct TreeNode
 
 struct TreeNode** tree_nodes;
 
-void allocateTreeNodesArr()
+void
+allocateTreeNodesArr()
 {
     tree_nodes = malloc(sizeof(struct TreeNode *) * (MAX_USERS+1));
     if (!tree_nodes)
@@ -33,7 +36,8 @@ void allocateTreeNodesArr()
 }
 
 // Free the given node and all its childs.
-void freeTreeNode(int node_id)
+void
+freeTreeNode(int node_id)
 {
     struct TreeNode *tree_node = tree_nodes[node_id];
     assert(tree_node);
@@ -45,7 +49,8 @@ void freeTreeNode(int node_id)
     tree_nodes[node_id] = NULL;
 }
 
-void initTree()
+void
+initTree()
 {
     allocateTreeNodesArr();
 
@@ -77,13 +82,15 @@ void initTree()
     tree_nodes[0] = root;
 }
 
-void freeTree()
+void
+freeTree()
 {
     freeTreeNode(0);
     free(tree_nodes);
 }
 
-int treeAddPreference(int id, int value)
+int
+treeAddPreference(int id, int value)
 {
     if (!tree_nodes[id] || listContainsElement(tree_nodes[id]->preferences, value))
         return 0;
@@ -92,7 +99,8 @@ int treeAddPreference(int id, int value)
     return 1;
 }
 
-int treeRemovePreference(int id, int value)
+int
+treeRemovePreference(int id, int value)
 {
     if (!tree_nodes[id])
         return 0;
@@ -101,7 +109,8 @@ int treeRemovePreference(int id, int value)
 }
 
 // This assumes `id` and `parent` are in range [0-MAX_USERS]!
-int treeAddNode(int id, int parent)
+int
+treeAddNode(int id, int parent)
 {
     assert(0 <= id);
     assert(0 <= parent);
@@ -141,7 +150,8 @@ int treeAddNode(int id, int parent)
     return 1;
 }
 
-int treeDelNode(int id)
+int
+treeDelNode(int id)
 {
     assert(0 <= id);
     assert(id <= MAX_USERS);
@@ -171,9 +181,65 @@ int treeDelNode(int id)
     return 1;
 }
 
+static struct List *
+marathonAux(struct TreeNode *curr, int k, int max_value)
+{
+    assert(curr);
+
+    struct List *res = malloc(sizeof(struct List));
+    (* res) = (struct List){ NULL, NULL };
+
+    assert(listIsSorted(curr->preferences));
+
+    // TODO: CLARIFY!!!
+    // This value will be passed as max_value recuresively to `curr` childs. It
+    // is either max_value, orthe first element of the `curr->preferences` list.
+    int next_limit = curr->preferences->head ?
+        MAX(max_value, curr->preferences->head->value) : max_value;
+
+    listForeach(curr->childs, node,
+        {
+            res = listMergeSortedLists(res,
+                marathonAux(tree_nodes[node->value], k, next_limit),
+                k, next_limit);
+        });
+
+    int list_size = 0;
+    listForeach(res, node,
+        {
+            ++list_size;
+        });
+
+    // If size of the result list is less than [k], add from the current node preferences lists.
+    listForeach(curr->preferences, node,
+        {
+            if (list_size < k && node->value > max_value)
+            {
+                listPushBack(res, node->value);
+                list_size++;
+            }
+            else
+            {
+                break;
+            }
+        });
+
+    return res;
+}
+
+// TODO: Refactor the name, and make sure it can return NULL if variables are
+// out of range, or just bad.
+struct List *
+runMarathon(int root, int k)
+{
+    assert(tree_nodes[root]); // TODO: This should return an error, not abort!
+    return marathonAux(tree_nodes[root], k, 0);
+}
+
 #ifdef DEBUG
 
-void printSubtree(int curr_id)
+void
+printSubtree(int curr_id)
 {
     struct TreeNode *curr = tree_nodes[curr_id];
     assert(curr);
@@ -185,7 +251,8 @@ void printSubtree(int curr_id)
     listForeach(curr->childs,node, { printSubtree(node->value); });
 }
 
-void printTree()
+void
+printTree()
 {
     printf("Tree state:\n");
     printSubtree(0);

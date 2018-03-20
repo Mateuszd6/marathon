@@ -8,6 +8,7 @@
 
 #include "linked_list.h"
 #include "tree.h"
+#include "utils.h"
 
 // Unix line ending character.
 #define COMMENT_LINE '#'
@@ -25,20 +26,23 @@ typedef enum input_feedback input_feedback_t;
 enum operation { ADD_USER, DEL_USER, ADD_MOVIE, DEL_MOVIE, MARATHON };
 typedef enum operation operation_t;
 
-void printError()
+static void
+printError()
 {
     fprintf(stderr, "ERROR\n");
 }
 
 // 1 if 'min <= value <= max', 0 in other case.
-int inRange(const int min, const int max, const int value)
+static int
+inRange(const int min, const int max, const int value)
 {
     assert(min <= max);
     return (min <= value && value <= max);
 }
 
 // Convert number stored as array of chars into int32.
-int stringToInt32(const char *str, int len)
+static int
+stringToInt32(const char *str, int len)
 {
     if (!inRange(1, 10, len))
         return -1;
@@ -64,7 +68,8 @@ int stringToInt32(const char *str, int len)
 
 // Check if [pattern] is a prefix of [text].
 // NOTE: pattern must be a string literal.
-int prefixMatch(const char *text, const char *pattern)
+static int
+prefixMatch(const char *text, const char *pattern)
 {
     for (int i = 0; pattern[i] != '\0'; ++i)
         if (text[i] != pattern[i])
@@ -73,7 +78,8 @@ int prefixMatch(const char *text, const char *pattern)
     return 1;
 }
 
-int readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
+static int
+readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
 {
     int letters_read = 0;
     while (inRange('0', '9', buffer[(* idx_in_buffer) + letters_read]))
@@ -94,7 +100,8 @@ int readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
 
 // Użytkownik o identyfikatorze [parentUserId] dodaje użytkownika o
 // identyfikatorze [userId]. Operacja ma się wykonywać w czasie stałym.
-void addUser (int parentUserId, int userId)
+static void
+addUser (int parentUserId, int userId)
 {
     if (!treeAddNode(userId, parentUserId))
         printError();
@@ -106,7 +113,8 @@ void addUser (int parentUserId, int userId)
 // [userId]. Usunięcie użytkownika ma się wykonywać w czasie stałym. Zapominanie
 // preferencji filmowych ma się wykonywać w czasie liniowym względem liczby
 // preferencji usuwanego użytkownika.
-void delUser (int userId)
+static void
+delUser (int userId)
 {
     if (!treeDelNode(userId))
         printError();
@@ -116,7 +124,8 @@ void delUser (int userId)
 // [movieRating] do swoich preferencji filmowych. Operacja ma się wykonywać w
 // czasie co najwyżej liniowym względem liczby preferencji użytkownika, który
 // dodaje film.
-void addMovie (int userId, int movieRating)
+static void
+addMovie (int userId, int movieRating)
 {
     if (!treeAddPreference(userId, movieRating))
         printError();
@@ -126,7 +135,8 @@ void addMovie (int userId, int movieRating)
 // [movieRating] ze swoich preferencji filmowych. Operacja ma się wykonywać w
 // czasie co najwyżej liniowym względem liczby preferencji użytkownika, który
 // usuwa film.
-void delMovie (int userId, int movieRating)
+static void
+delMovie (int userId, int movieRating)
 {
     if (!treeRemovePreference(userId, movieRating))
         printError();
@@ -139,12 +149,35 @@ void delMovie (int userId, int movieRating)
 // [marathon] dla każdego z potomków użytkownika userId, przy czym w wynikowej
 // grupie [k] filmów znajdą się tylko takie, które mają ocenę większą od
 // maksymalnej oceny filmu spośród preferencji użytkownika userId.
-void marathon (int userId, int k)
+static void
+marathon (int userId, int k)
 {
+#ifdef DEBUG
     printf("Marathon on tree:\n");
     printTree();
+#endif
 
-    
+    struct List *res = runMarathon(userId, k);
+    if (!res)
+    {
+        printError();
+    }
+    else
+    {
+        if (listEmpty(res))
+            printf("NONE\n");
+        else
+        {
+            listPrintContent(res);
+            printf("\n");
+        }
+
+        listFree(res);
+    }
+
+    // TODO: remove:
+    if (!userId && !k)
+        assert(0);
 }
 
 // [MAX_INPUT_LINE_LENGTH] characters is more than enought for valid,
@@ -152,13 +185,13 @@ void marathon (int userId, int k)
 // buffer.
 char input_buffer[MAX_INPUT_LINE_LENGTH];
 
-int readInputLine()
+static int
+readInputLine()
 {
     char c;
     int index_in_buffer = 0;
 
     // TODO: Can "empty lines" have whitespaces?
-
     switch(c = getchar())
     {
     case EOF:
@@ -212,7 +245,8 @@ int readInputLine()
     }
 }
 
-void executeComamnd(operation_t call, int* args)
+static void
+executeComamnd(operation_t call, int* args)
 {
     switch(call)
     {
@@ -275,7 +309,8 @@ void executeComamnd(operation_t call, int* args)
     }
 }
 
-int main (void)
+int
+main(void)
 {
 // TODO: Remove or move to the test.
 #ifdef DEBUG
@@ -334,6 +369,48 @@ int main (void)
 
         listFree(my_list);
         free(my_other_list);
+
+        // Some tests for the lists.
+        my_list = malloc(sizeof(struct List));
+        my_other_list = malloc(sizeof(struct List));
+
+        if (!my_list || !my_other_list)
+            exit(1);
+
+        (* my_list) = (struct List){ NULL, NULL };
+        (* my_other_list) = (struct List){ NULL, NULL };
+
+        listPushBack(my_list, 12);
+        listPushBack(my_list, 8);
+        listPushBack(my_list, 5);
+        listInsertMaintainSortOrder(my_list, 3);
+        listInsertMaintainSortOrder(my_list, 18);
+        assert(listRemoveElement(my_list, 5));
+
+
+        listPushBack(my_other_list, 11);
+        listPushBack(my_other_list, 9);
+        listPushBack(my_other_list, 6);
+        listPushBack(my_other_list, 0);
+        listPushBack(my_other_list, -1);
+        listPushBack(my_other_list, -5);
+        listPushBack(my_other_list, -20);
+        listPushBack(my_other_list, -1236);
+        assert(!listRemoveElement(my_other_list, 1));
+
+        printf("\nOnce again:\n");
+        listPrintContent(my_list);
+        printf("\n");
+        listPrintContent(my_other_list);
+        printf("\n\n");
+
+        struct List *merged = listMergeSortedLists(my_list, my_other_list, 2, 3);
+
+        printf("Merged: with 2, 3: ");
+        listPrintContent(merged);
+        printf("\n\n");
+
+        listFree(merged);
 
         // Tree tests:
         initTree();

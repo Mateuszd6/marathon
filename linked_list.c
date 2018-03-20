@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "linked_list.h"
+#include "utils.h"
 
 int listEmpty (const struct List *list)
 {
@@ -38,7 +39,35 @@ void listConcat(struct List* dest, struct List* src)
     src->tail = dest->tail;
 }
 
-void listPushBack (struct List* list, int inserted_value)
+// Insert node to the back of the list. Assumes the node is not in any list!
+static void
+listPushBackNode(struct List* list, struct ListNode *node_to_insert)
+{
+    node_to_insert->next = NULL;
+    node_to_insert->prev = NULL;
+
+    // If list is not empty just append to the back.
+    if (!listEmpty(list))
+    {
+        node_to_insert->prev = list->tail;
+        list->tail->next = node_to_insert;
+
+        list->tail = node_to_insert;
+    }
+    // Otherwise just add it as first element and set both head and tail to
+    // point to it.
+    else
+    {
+        list->head = node_to_insert;
+        list->tail = node_to_insert;
+    }
+}
+
+// Push the given value to the end of a list. Allocates a new node and uses
+// `listPushBackNode` to add it to the list. Aborts with error code 1 if
+// could not allocate memeory.
+void
+listPushBack(struct List* list, int inserted_value)
 {
     struct ListNode *new_node = malloc(sizeof(struct ListNode));
 
@@ -47,24 +76,7 @@ void listPushBack (struct List* list, int inserted_value)
         exit(1);
 
     new_node->value = inserted_value;
-    new_node->next = NULL;
-    new_node->prev = NULL;
-
-    // If list is not empty just append to the back.
-    if (!listEmpty(list))
-    {
-        new_node->prev = list->tail;
-        list->tail->next = new_node;
-
-        list->tail = new_node;
-    }
-    // Otherwise just add it as first element and set both head and tail to
-    // point to it.
-    else
-    {
-        list->head = new_node;
-        list->tail = new_node;
-    }
+    listPushBackNode(list, new_node);
 }
 
 // NOTE: This assumes list is sorted in NON-INCREASING order!
@@ -172,6 +184,80 @@ int listContainsElement(const struct List* list, int search_value)
     return element_found;
 }
 
+// Merge two sorted lists, but keep only 'max_elements' or less elements and
+// store values only grater than 'greater_than'. Rest of the lists content is
+// freed.
+struct List *
+listMergeSortedLists(struct List *self, struct List *other, int greater_than, int max_elements)
+{
+    assert(listIsSorted(self));
+    assert(listIsSorted(other));
+
+    struct List *res = malloc(sizeof(struct List));
+    (* res) = (struct List){ NULL, NULL };
+
+    struct ListNode *self_curr = self->head,
+        *other_curr = other->head;
+
+    int inserted_elements = 0;
+
+    while (self_curr && self_curr->value > greater_than
+        && other_curr && other_curr->value > greater_than
+        && inserted_elements < max_elements)
+    {
+        if (self_curr->value >= other_curr->value)
+        {
+            struct ListNode *next = self_curr->next;
+            listPushBackNode(res, self_curr);
+            self_curr = next;
+        }
+        else
+        {
+            struct ListNode *next = other_curr->next;
+            listPushBackNode(res, other_curr);
+            other_curr = next;
+        }
+
+        ++inserted_elements;
+    }
+
+    for(int i = 0; i < 2; ++i)
+    {
+        while (self_curr && self_curr->value > greater_than
+            && inserted_elements < max_elements)
+        {
+            struct ListNode *next = self_curr->next;
+            listPushBackNode(res, self_curr);
+            self_curr = next;
+
+            ++inserted_elements;
+        }
+
+        SWAP(self_curr, other_curr);
+    }
+
+    for (int i = 0; i < 2; ++i)
+    {
+        while (self_curr)
+        {
+            struct ListNode *next = self_curr->next;
+            free(self_curr);
+            self_curr = next;
+        }
+
+        SWAP(self_curr, other_curr);
+    }
+
+    // TODO: REFACTOR THE list API?
+    free(self);
+    free(other);
+
+    self = NULL;
+    other = NULL;
+
+    return res;
+}
+
 void listFree(struct List* list)
 {
     if (!list)
@@ -197,7 +283,8 @@ void listFree(struct List* list)
 }
 
 // Removes the node [el] from the list.
-void listRemoveNode(struct List *list, struct ListNode *el)
+void
+listRemoveNode(struct List *list, struct ListNode *el)
 {
     // If this is the only element in the list:
     if (!el->prev && !el->next)

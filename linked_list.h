@@ -1,6 +1,9 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
+#ifndef LINKED_LIST_H
+#define LINKED_LIST_H
+
 // Singly linked list, only pointer to the next element is stored, there is no
 // way to go backwards.
 struct ListNode
@@ -34,7 +37,7 @@ void listInsertMaintainSortOrder(struct List* list, int value);
 void listForeach(const struct List* list, void (*func)(struct ListNode*));
 #else
 #define listForeach(list,element,func_body)             \
-    {							\
+    {                                                   \
         if (!(list))                                    \
             assert(!"List pointer cannot be NULL!");    \
         struct ListNode *(element) = (list)->head;      \
@@ -58,10 +61,15 @@ void listRemoveNode(struct List *list, struct ListNode *el);
 
 int listRemoveElement(struct List* list, int value_to_remove);
 
+struct List *listMergeSortedLists(struct List *self, struct List *other,
+    int greater_than, int max_elements);
+
 #ifdef DEBUG
 
 int listIsSorted(const struct List* list);
 
 void listPrintContent(const struct List* list);
+
+#endif
 
 #endif
