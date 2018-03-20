@@ -1,23 +1,20 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -O2
-# TODO: all: above the debug: !!!
+CC=gcc
+CFLAGS=-Wall -Wextra -std=c11 -O2
+DEBUG_FLAGS=-Wall -Wextra -Wshadow -std=c11 -g -Og -DDEBUG
+
+OBJECTS=tree.o main.o linked_list.o
 
 .PHONY: all clean
 
-debug: CFLAGS = -Wall -Wextra -Wshadow -std=c11 -Og -DDEBUG -g
+# TODO: all: above the debug: !!!
+debug: CFLAGS=$(DEBUG_FLAGS)
 debug: all
 
-all: main.o linked_list.o tree.o
-	$(CC) main.o linked_list.o tree.o -o bin/program
+all: $(OBJECTS)
+	$(CC) $(OBJECTS) -o bin/program
 
-main.o: main.c
-	$(CC) -c $(CFLAGS) main.c -o main.o
-
-linked_list.o: linked_list.c
-	$(CC) -c $(CFLAGS) linked_list.c -o linked_list.o
-
-tree.o: tree.c
-	$(CC) -c $(CFLAGS) tree.c -o tree.o
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	-rm -f *.o
