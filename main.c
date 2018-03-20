@@ -1,17 +1,18 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 #include <stdio.h>
-#include <assert.h>
 #include <malloc.h>
 #include <stdlib.h>
 #include <limits.h>
+// Dont include asserts in the release build.
+#if !defined DEBUG
+#define NDEBUG
+#endif
+#include <assert.h>
 
 #include "linked_list.h"
 #include "tree.h"
 #include "utils.h"
-
-// Unix line ending character.
-#define COMMENT_LINE '#'
 
 // Max size of a VALID input line.
 #define MAX_INPUT_LINE_LENGTH (32)
@@ -20,7 +21,7 @@ const int MAX_MOVIE_RATING = 2147483647;
 const int MAX_K = 2147483647;
 
 // Return values of readInputLine function:
-enum input_feedback { INPUT_EOF, INPUT_IGNORED_LINE, INPUT_INVALID, INPUT_OK };
+enum input_feedback { INPUT_EOF, INPUT_IGNORED_LINE, INPUT_INVALID, INPUT_INVALID_AND_EOF, INPUT_OK };
 typedef enum input_feedback input_feedback_t;
 
 enum operation { ADD_USER, DEL_USER, ADD_MOVIE, DEL_MOVIE, MARATHON };
@@ -32,60 +33,12 @@ printError()
     fprintf(stderr, "ERROR\n");
 }
 
-// 1 if 'min <= value <= max', 0 in other case.
-static int
-inRange(const int min, const int max, const int value)
-{
-    assert(min <= max);
-    return (min <= value && value <= max);
-}
-
-// Convert number stored as array of chars into int32.
-static int
-stringToInt32(const char *str, int len)
-{
-    if (!inRange(1, 10, len))
-        return -1;
-
-    int res = 0;
-    for (int i = 0; i < len; ++i)
-    {
-        assert(inRange('0', '9', str[i]));
-
-        // Check borders when we are close to INT_MAX.
-        if (i == 9 && (res > INT_MAX / 10
-                || (res == INT_MAX / 10 && str[i] - '0' > INT_MAX % 10)))
-        {
-            return -1;
-        }
-
-        res *= 10;
-        res += str[i] - '0';
-    }
-
-    return res;
-}
-
-// Check if [pattern] is a prefix of [text].
-// NOTE: pattern must be a string literal.
-static int
-prefixMatch(const char *text, const char *pattern)
-{
-    for (int i = 0; pattern[i] != '\0'; ++i)
-        if (text[i] != pattern[i])
-            return 0;
-
-    return 1;
-}
-
 static int
 readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
 {
     int letters_read = 0;
     while (inRange('0', '9', buffer[(* idx_in_buffer) + letters_read]))
-    {
         ++letters_read;
-    }
 
     int res_converted = stringToInt32(buffer + (* idx_in_buffer), letters_read);
     (* idx_in_buffer) += letters_read;
@@ -105,6 +58,8 @@ addUser (int parentUserId, int userId)
 {
     if (!treeAddNode(userId, parentUserId))
         printError();
+    else
+        printf("OK\n");
 }
 
 // Użytkownik o identyfikatorze [userId] wypisuje się. Dodane przez niego
@@ -118,7 +73,9 @@ delUser (int userId)
 {
     if (!treeDelNode(userId))
         printError();
-}
+    else
+
+        printf("OK\n");}
 
 // Użytkownik o identyfikatorze [userId] dodaje film o identyfikatorze
 // [movieRating] do swoich preferencji filmowych. Operacja ma się wykonywać w
@@ -129,6 +86,8 @@ addMovie (int userId, int movieRating)
 {
     if (!treeAddPreference(userId, movieRating))
         printError();
+    else
+        printf("OK\n");
 }
 
 // Użytkownik o identyfikatorze [userId] usuwa film o identyfikatorze
@@ -140,6 +99,8 @@ delMovie (int userId, int movieRating)
 {
     if (!treeRemovePreference(userId, movieRating))
         printError();
+    else
+        printf("OK\n");
 }
 
 // Wyznacza co najwyżej [k] identyfikatorów filmów o najwyższych ocenach
@@ -174,15 +135,10 @@ marathon (int userId, int k)
 
         listFree(res);
     }
-
-    // TODO: remove:
-    if (!userId && !k)
-        assert(0);
 }
 
-// [MAX_INPUT_LINE_LENGTH] characters is more than enought for valid,
-// non-comment input lines. Comment lines are ignored and never stored in
-// buffer.
+// `MAX_INPUT_LINE_LENGTH` characters is more than enought for valid,
+// non-comment input lines. Comment lines are ignored, never stored in buffer.
 char input_buffer[MAX_INPUT_LINE_LENGTH];
 
 static int
@@ -191,7 +147,6 @@ readInputLine()
     char c;
     int index_in_buffer = 0;
 
-    // TODO: Can "empty lines" have whitespaces?
     switch(c = getchar())
     {
     case EOF:
@@ -201,41 +156,46 @@ readInputLine()
         return INPUT_IGNORED_LINE;
 
     // If given line is a comment, just skip to the EOL.
-    case COMMENT_LINE:
+    case '#':
     {
         while ((c = getchar()) != '\n')
         {
-            // TODO: If c == EOF line is invalid!
-            assert(c != EOF);
+            if (c == EOF)
+                // TODO: SHOULD THIS RETURN INPUT_INVALID_AND_EOF,
+                // or do we accept it (return INPUT_EOF)?
+                return INPUT_INVALID_AND_EOF;
         }
+
         return INPUT_IGNORED_LINE;
     }
 
     default:
     {
         int buffer_size = 0;
+        // Don't forget about the first character (getchar in swtich statement).
         do
         {
-            // TODO: If c == EOF line is invalid!
-            assert(c != EOF);
+            // Lines must end with '\n' so the input is invalid!
+            if (c == EOF)
+                return INPUT_INVALID_AND_EOF;
+
+            if (buffer_size >= MAX_INPUT_LINE_LENGTH)
+                break;
 
             input_buffer[index_in_buffer++] = c;
             buffer_size++;
         }
-        while ((c = getchar()) != '\n'
-            && buffer_size < MAX_INPUT_LINE_LENGTH);
+        while ((c = getchar()) != '\n');
 
+        // `MAX_INPUT_LINE_LENGTH` is large enough to store any vaild input so
+        // the inserted line IS NOT valid.
         if (c != '\n')
         {
-            // MAX_INPUT_LINE_LENGTH is large enough to store any vaild input
-            // so the inserted line is not valid.
-
             // Skip to the end of the line and return an input error.
             while ((c = getchar()) != '\n')
-            {
-                // TODO: If c == EOF line is invalid! (It is already!!!!)
-                assert(c != EOF);
-            }
+                if (c == EOF)
+                    return INPUT_INVALID_AND_EOF;
+
             return INPUT_INVALID;
         }
 
@@ -252,7 +212,8 @@ executeComamnd(operation_t call, int* args)
     {
     case ADD_USER:
     {
-        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_USERS, args[1]))
+        if (!inRange(0, MAX_USERS, args[0])
+            || !inRange(0, MAX_USERS, args[1]))
         {
             // ERROR: argument(s) out of range.
             printError();
@@ -274,7 +235,8 @@ executeComamnd(operation_t call, int* args)
 
     case ADD_MOVIE:
     {
-        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_MOVIE_RATING, args[1]))
+        if (!inRange(0, MAX_USERS, args[0])
+            || !inRange(0, MAX_MOVIE_RATING, args[1]))
         {
             // ERROR: argument(s) out of range.
             printError();
@@ -285,7 +247,8 @@ executeComamnd(operation_t call, int* args)
 
     case DEL_MOVIE:
     {
-        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_MOVIE_RATING, args[1]))
+        if (!inRange(0, MAX_USERS, args[0])
+            || !inRange(0, MAX_MOVIE_RATING, args[1]))
         {
             // ERROR: argument(s) out of range.
             printError();
@@ -296,14 +259,13 @@ executeComamnd(operation_t call, int* args)
 
     case MARATHON:
     {
-        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_K, args[1]))
+        if (!inRange(0, MAX_USERS, args[0])
+            || !inRange(0, MAX_K, args[1]))
         {
             // ERROR: argument(s) out of range.
             printError();
         }
 
-        // TODO: Check if:
-        // *) args[0] exist in the tree.
         marathon(args[0], args[1]);
     } break;
     }
@@ -312,7 +274,6 @@ executeComamnd(operation_t call, int* args)
 int
 main(void)
 {
-// TODO: Remove or move to the test.
 #ifdef DEBUG
     {
         // Some tests for the lists.
@@ -322,14 +283,19 @@ main(void)
         if (!my_list || !my_other_list)
             exit(1);
 
-        listPushBack(my_list, 12);
+        assert(listInsertMaintainSortOrder(my_list, 12));
         listPushBack(my_list, 8);
         listPushBack(my_list, 5);
         /* listPushBack(my_list, 2); */
-        /* listPushBack(my_list, 1); */
-        listInsertMaintainSortOrder(my_list, 3);
-        listInsertMaintainSortOrder(my_list, 3);
+        listPushBack(my_list, 1);
+        assert(listInsertMaintainSortOrder(my_list, 3));
+        assert(!listInsertMaintainSortOrder(my_list, 3));
         listInsertMaintainSortOrder(my_list, 18);
+
+        printf("Lets start: ");
+        listPrintContent(my_list);
+        printf("\n");
+        assert(listRemoveElement(my_list, 1));
         assert(listRemoveElement(my_list, 5));
         assert(listRemoveElement(my_list, 18));
         assert(listRemoveElement(my_list, 12));
@@ -386,7 +352,6 @@ main(void)
         listInsertMaintainSortOrder(my_list, 3);
         listInsertMaintainSortOrder(my_list, 18);
         assert(listRemoveElement(my_list, 5));
-
 
         listPushBack(my_other_list, 11);
         listPushBack(my_other_list, 9);
@@ -448,6 +413,13 @@ main(void)
         {
             continue;
         }
+        // The case when input line is invalid (E.g. not ended with a '\n') and
+        // the EOF is found at the end of it.
+        else if (read_line_state == INPUT_INVALID_AND_EOF)
+        {
+            printError();
+            break;
+        }
         else if (read_line_state == INPUT_OK)
         {
             int idx_in_buffer = 0;
@@ -457,7 +429,6 @@ main(void)
                 ++idx_in_buffer;
             }
 
-            // TODO: Handle invalid input.
             if (input_buffer[idx_in_buffer++] != ' ')
             {
                 // ERROR: Wrong input format; no space after a command.

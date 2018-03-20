@@ -4,8 +4,6 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
-// Singly linked list, only pointer to the next element is stored, there is no
-// way to go backwards.
 struct ListNode
 {
     struct ListNode *next, *prev;
@@ -17,25 +15,48 @@ struct List
     // If head is NULL, the list is empty.
     struct ListNode *head;
 
-    // Reference to tail is needed to be able to concat lists in O(1) time.
     // If head is NULL, this must be also NULL!
     struct ListNode *tail;
 };
 
+// 1 if `list` is empty, else 0.
 int listEmpty (const struct List *list);
 
-void listConcat(struct List* dest, struct List* src);
+// Print `list` content to the screen. Note: No endline char is printed.
+void listPrintContent(const struct List* list);
 
-int listContainsElement(const struct List* list, int search_value);
+// Free whole `list` TODO: and a pointer itself. Possible to refactor later.
+void listFree(struct List* list);
 
+// Push the given value to the end of a list. Allocates a new node and uses
+// `listPushBackNode` to add it to the list. Aborts with error code 1 if
+// could not allocate memeory.
 void listPushBack (struct List* list, int inserted_value);
 
-void listInsertMaintainSortOrder(struct List* list, int value);
+// "Copy" the content of the `src` list to the `dest`. `dest` list becomes
+// empty, and all its elements are moved to `dest`. No additional memory is
+// allocated.
+void listConcat(struct List* dest, struct List* src);
 
-#if 0
-// TODO: Decide if doing foreach stuff is cool or not.
-void listForeach(const struct List* list, void (*func)(struct ListNode*));
-#else
+// Insert maintaining sort order of the list. This won't insert a value if one
+// is already there. This assumes list is sorted in NON-INCREASING order!
+// Aborts with error code 1 if could not allocate memory.
+int listInsertMaintainSortOrder(struct List* list, int value);
+
+// Removes the node `el` from the list. This assmues that `el` is part of
+// `list`. If it is not true, behaviour is undefined!
+void listRemoveNode(struct List *list, struct ListNode *el);
+
+// Removes ALL ocurrences of `value_to_remove` from the `list`.
+int listRemoveElement(struct List* list, int value_to_remove);
+
+// Merge two sorted lists, but keep only 'max_elements' or less elements and
+// store values only grater than 'greater_than'. Rest of the lists content is
+// freed.
+struct List *listMergeSortedLists(struct List *self, struct List *other,
+    int greater_than, int max_elements);
+
+// Macro used to execute some code for each node in a list.
 #define listForeach(list,element,func_body)             \
     {                                                   \
         if (!(list))                                    \
@@ -53,22 +74,11 @@ void listForeach(const struct List* list, void (*func)(struct ListNode*));
         }                                               \
     }
 
-#endif
-
-void listFree(struct List* list);
-
-void listRemoveNode(struct List *list, struct ListNode *el);
-
-int listRemoveElement(struct List* list, int value_to_remove);
-
-struct List *listMergeSortedLists(struct List *self, struct List *other,
-    int greater_than, int max_elements);
-
 #ifdef DEBUG
 
+// 1 if given list is sorted in NON-INCREASING order, else 0.
+// Used only for debugging, not included in a release build.
 int listIsSorted(const struct List* list);
-
-void listPrintContent(const struct List* list);
 
 #endif
 

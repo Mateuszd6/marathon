@@ -1,9 +1,12 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 #include <malloc.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h> // for memeset
+// Dont include asserts in the release build.
+#if !defined DEBUG
+#define NDEBUG
+#endif
 #include <assert.h>
 
 #include "linked_list.h"
@@ -23,9 +26,9 @@ struct TreeNode
     struct ListNode *pos_in_childlist;
 };
 
-struct TreeNode** tree_nodes;
+static struct TreeNode** tree_nodes;
 
-void
+static void
 allocateTreeNodesArr()
 {
     tree_nodes = malloc(sizeof(struct TreeNode *) * (MAX_USERS+1));
@@ -36,7 +39,7 @@ allocateTreeNodesArr()
 }
 
 // Free the given node and all its childs.
-void
+static void
 freeTreeNode(int node_id)
 {
     struct TreeNode *tree_node = tree_nodes[node_id];
@@ -63,21 +66,12 @@ initTree()
 
     (* childs) = (struct List) { NULL, NULL };
     (* preferences) = (struct List) { NULL, NULL };
-
-#if 0
-    root->id = 0;
-    root->parent = 0;
-    root->preferences = preferences;
-    root->childs = childs;
-    root->pos_in_childlist = NULL;
-#else
     (* root) = (struct TreeNode) {
         0, 0,
         preferences,
         childs,
         NULL
     };
-#endif
 
     tree_nodes[0] = root;
 }
@@ -90,32 +84,10 @@ freeTree()
 }
 
 int
-treeAddPreference(int id, int value)
-{
-    if (!tree_nodes[id] || listContainsElement(tree_nodes[id]->preferences, value))
-        return 0;
-
-    listInsertMaintainSortOrder(tree_nodes[id]->preferences, value);
-    return 1;
-}
-
-int
-treeRemovePreference(int id, int value)
-{
-    if (!tree_nodes[id])
-        return 0;
-
-    return listRemoveElement(tree_nodes[id]->preferences, value);
-}
-
-// This assumes `id` and `parent` are in range [0-MAX_USERS]!
-int
 treeAddNode(int id, int parent)
 {
-    assert(0 <= id);
-    assert(0 <= parent);
-    assert(id <= MAX_USERS);
-    assert(parent <= MAX_USERS);
+    if (!inRange(0, MAX_USERS, id) || !inRange(0, MAX_USERS, parent))
+        return 0;
 
     // If node to add already exits, or parent does not:
     if (tree_nodes[id] || !tree_nodes[parent])
@@ -128,7 +100,10 @@ treeAddNode(int id, int parent)
         exit(1);
 
     tree_nodes[id] = new_node;
+
+#ifdef DEBUG
     assert(!listRemoveElement(parent_node->childs, id));
+#endif
 
     struct List *childs = malloc(sizeof(struct List));
     struct List *prefs = malloc(sizeof(struct List));
@@ -138,7 +113,7 @@ treeAddNode(int id, int parent)
     (* childs) = (struct List) { NULL, NULL };
     (* prefs) = (struct List) { NULL, NULL };
 
-    // After a push back 'parent_node->childs->tail' point to the correct node
+    // After a push back `parent_node->childs->tail` point to the correct node.
     listPushBack(parent_node->childs, id);
     (* new_node) = (struct TreeNode) {
         id, parent,
@@ -153,25 +128,31 @@ treeAddNode(int id, int parent)
 int
 treeDelNode(int id)
 {
-    assert(0 <= id);
-    assert(id <= MAX_USERS);
+    if (!inRange(0, MAX_USERS, id))
+        return 0;
 
     // It is neither possible to remove root user, nor the node that isnt there.
     if (id == 0 || !tree_nodes[id])
         return 0;
 
     struct TreeNode *node_to_delete = tree_nodes[id];
-    assert(node_to_delete);
-
     struct TreeNode *parent = tree_nodes[node_to_delete->parent];
     assert(parent);
 
-    // TODO: Remove asserts / make sure they are not present in the final build!
+    // Free the preferences list.
     listFree(node_to_delete->preferences);
-    assert(node_to_delete->pos_in_childlist->value == node_to_delete->id);
-    listRemoveNode(parent->childs, node_to_delete->pos_in_childlist);
-    assert(!listRemoveElement(parent->childs, node_to_delete->id));
 
+    // If everything is done correctly, `node_to_delete->pos_in_childlist` is a
+    // pointer to the `node_to_delete`.
+    assert(node_to_delete->pos_in_childlist->value == node_to_delete->id);
+
+    // Now we remove the node from the list, so is is not there anymore.
+    listRemoveNode(parent->childs, node_to_delete->pos_in_childlist);
+#ifdef DEBUG
+    assert(!listRemoveElement(parent->childs, node_to_delete->id));
+#endif
+
+    // The childlist of the deleted node is appended to its parent.
     listConcat(tree_nodes[node_to_delete->parent]->childs, node_to_delete->childs);
 
     free(node_to_delete->childs);
@@ -179,6 +160,24 @@ treeDelNode(int id)
     tree_nodes[id] = NULL;
 
     return 1;
+}
+
+int
+treeAddPreference(int id, int value)
+{
+    if (!tree_nodes[id] || value < 0)
+        return 0;
+
+    return listInsertMaintainSortOrder(tree_nodes[id]->preferences, value);
+}
+
+int
+treeRemovePreference(int id, int value)
+{
+    if (!tree_nodes[id] || value < 0)
+        return 0;
+
+    return listRemoveElement(tree_nodes[id]->preferences, value);
 }
 
 static struct List *
@@ -189,11 +188,13 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
     struct List *res = malloc(sizeof(struct List));
     (* res) = (struct List){ NULL, NULL };
 
+#ifdef DEBUG
     assert(listIsSorted(curr->preferences));
+#endif
 
-    // TODO: CLARIFY!!!
     // This value will be passed as max_value recuresively to `curr` childs. It
-    // is either max_value, orthe first element of the `curr->preferences` list.
+    // is max of either `max_value`, or first element of the `curr->preferences`
+    // list (if one exists).
     int next_limit = curr->preferences->head ?
         MAX(max_value, curr->preferences->head->value) : max_value;
 
@@ -210,7 +211,8 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
             ++list_size;
         });
 
-    // If size of the result list is less than [k], add from the current node preferences lists.
+    // If size of the result list is less than `k`, add from the current node
+    // preferences lists.
     listForeach(curr->preferences, node,
         {
             if (list_size < k && node->value > max_value)
@@ -233,12 +235,15 @@ struct List *
 runMarathon(int root, int k)
 {
     assert(tree_nodes[root]); // TODO: This should return an error, not abort!
+    if (!tree_nodes[root] || k < 0)
+        return NULL;
+
     return marathonAux(tree_nodes[root], k, 0);
 }
 
 #ifdef DEBUG
 
-void
+static void
 printSubtree(int curr_id)
 {
     struct TreeNode *curr = tree_nodes[curr_id];

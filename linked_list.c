@@ -2,42 +2,14 @@
 // IPP, 2018L Task: "Maraton filmowy".
 #include <stdlib.h>
 #include <malloc.h>
+// Dont include asserts in the release build.
+#if !defined DEBUG
+#define NDEBUG
+#endif
 #include <assert.h>
 
 #include "linked_list.h"
 #include "utils.h"
-
-int listEmpty (const struct List *list)
-{
-    // TODO: REMOVE THIS ASSERT!
-    if (!list->head)
-        assert(!list->tail);
-
-    return (list->head == NULL);
-}
-
-// NOTE: These concats two lists, and makes BOTH src and dest poiting to the
-// first element of list concatenation.
-void listConcat(struct List* dest, struct List* src)
-{
-    // If first list is empty,copy the head and tail values from the second one
-    if (listEmpty(dest))
-    {
-        dest->head = src->head;
-        dest->tail = src->tail;
-    }
-    // If src is empty do nothing.
-    else if (!listEmpty(src))
-    {
-        dest->tail->next = src->head;
-        src->head->prev = dest->tail;
-
-        dest->tail = src->tail;
-    }
-
-    src->head = dest->head;
-    src->tail = dest->tail;
-}
 
 // Insert node to the back of the list. Assumes the node is not in any list!
 static void
@@ -63,11 +35,39 @@ listPushBackNode(struct List* list, struct ListNode *node_to_insert)
     }
 }
 
-// Push the given value to the end of a list. Allocates a new node and uses
-// `listPushBackNode` to add it to the list. Aborts with error code 1 if
-// could not allocate memeory.
-void
-listPushBack(struct List* list, int inserted_value)
+int listEmpty (const struct List *list)
+{
+    if (!list->head)
+        assert(!list->tail);
+
+    return (list->head == NULL);
+}
+
+void listPrintContent(const struct List* list)
+{
+    listForeach(list,curr,
+        {
+            printf("%d", curr->value);
+
+            // Dont print space after last number.
+            if (curr->next != NULL)
+                printf(" ");
+        });
+}
+
+void listFree(struct List* list)
+{
+    if (!list)
+        assert(!"List pointer cannot be NULL!");
+
+    listForeach(list,curr, { free(curr); });
+
+    // TODO: Would be nice to renameto listCrear once decided not to do it here.
+    free(list);
+    list = NULL;
+}
+
+void listPushBack(struct List* list, int inserted_value)
 {
     struct ListNode *new_node = malloc(sizeof(struct ListNode));
 
@@ -79,8 +79,29 @@ listPushBack(struct List* list, int inserted_value)
     listPushBackNode(list, new_node);
 }
 
-// NOTE: This assumes list is sorted in NON-INCREASING order!
-void listInsertMaintainSortOrder(struct List* list, int value)
+void listConcat(struct List* dest, struct List* src)
+{
+    // If first list is empty,copy the head and tail values from the second one
+    if (listEmpty(dest))
+    {
+        dest->head = src->head;
+        dest->tail = src->tail;
+    }
+    // If src is empty do nothing.
+    else if (!listEmpty(src))
+    {
+        dest->tail->next = src->head;
+        src->head->prev = dest->tail;
+
+        dest->tail = src->tail;
+    }
+
+    // `src` is now empty, all its elements were moved to `dest`.
+    src->head = NULL;
+    src->tail = NULL;
+}
+
+int listInsertMaintainSortOrder(struct List* list, int value)
 {
 #ifdef DEBUG
     assert(listIsSorted(list));
@@ -92,106 +113,116 @@ void listInsertMaintainSortOrder(struct List* list, int value)
     struct ListNode *new_node = malloc(sizeof(struct ListNode));
     if (!new_node)
         exit(1);
+
     (* new_node) = (struct ListNode){ NULL, NULL, value };
 
-    // If list has only one element just make one-element list.
-    if (!list->head)
-    {
-        assert(!list->tail);
+    int value_inserted = 0,
+        value_already_in_list = 0;
+    listForeach(list,curr,
+        {
+            if (!value_inserted && !value_already_in_list)
+            {
+                if (curr->value == value)
+                {
+                    value_already_in_list = 1;
+                }
+                else if (curr->value < value)
+                {
+                    // If 'curr' is not the first element in the list,
+                    // we do normally.
+                    if (curr->prev)
+                        curr->prev->next = new_node;
+                    // If it is, update list head.
+                    else
+                        list->head = new_node;
 
-        list->head = new_node;
-        list->tail = new_node;
+                    // If inserting as first element, curr->prev is NULL,
+                    // and everything is fine.
+                    new_node->prev = curr->prev;
+
+                    new_node->next = curr;
+                    curr->prev = new_node;
+
+                    // Make sure that all this happens only once.
+                    value_inserted = 1;
+                }
+            }
+        });
+
+    // If value was not inserted its the least element in the list,
+    // (`list` might be also empty), so we append it to the back.
+    if (!value_inserted && !value_already_in_list)
+    {
+        listPushBackNode(list, new_node);
+        value_inserted = 1;
+    }
+
+    return value_inserted;
+}
+
+
+void listRemoveNode(struct List *list, struct ListNode *el)
+{
+    // If this is the only element in the list:
+    if (!el->prev && !el->next)
+    {
+        list->head = NULL;
+        list->tail = NULL;
+    }
+    // If this is a first one:
+    else if (!el->prev)
+    {
+        list->head = el->next;
+        el->next->prev = NULL;
+    }
+    // If this si a last one:
+    else if (!el->next)
+    {
+        list->tail = el->prev;
+        el->prev->next = NULL;
     }
     else
     {
-        int value_inserted = 0;
-        listForeach(list,curr,
-            {
-                if (!value_inserted)
-                    if (curr->value < value)
-                    {
-                        // If 'curr' is not the first element in the list
-                        if (curr->prev)
-                            curr->prev->next = new_node;
-                        // If it is, update list head.
-                        else
-                            list->head = new_node;
-
-                        new_node->prev = curr->prev;
-                        new_node->next = curr;
-                        curr->prev = new_node;
-
-                        // If we insert before first element, we must update list head.
-                        if (curr == list->head)
-                            list->head = new_node;
-
-                        // Make sure that all this happens only once.
-                        value_inserted = 1;
-                    }
-            });
-
-        if (!value_inserted)
-        {
-            list->tail->next = new_node;
-            new_node->prev = list->tail;
-            list->tail = new_node;
-        }
+        el->prev->next = el->next;
+        el->next->prev = el->prev;
     }
+
+    free(el);
 }
 
-// TODO: Decide if doing foreach stuff is cool or not.
-#if 0
-void listForeach(const struct List* list, void (*func)(struct ListNode*))
+int listRemoveElement(struct List* list, int value_to_remove)
 {
     if (!list)
         assert(!"List pointer cannot be NULL!");
 
+    int has_removed_element = 0;
     struct ListNode *current = list->head;
+
     while (current != NULL)
     {
         struct ListNode *next = current->next;
         if (next == NULL)
             assert(current == list->tail);
 
-        func(current);
+        if (current->value == value_to_remove)
+        {
+            listRemoveNode(list, current);
+            has_removed_element = 1;
+        }
 
         current = next;
     }
-}
-#endif
 
-int listContainsElement(const struct List* list, int search_value)
-{
-    int element_found = 0;
-#if 0
-    listForeach(list,
-        ({
-            void callback(struct ListNode *curr)
-            {
-                if (curr->value == search_value)
-                    element_found = 1;
-            };
-            callback;
-        }));
-#else
-    listForeach(list,curr,
-        {
-            if (curr->value == search_value)
-                element_found = 1;
-        });
-#endif
-
-    return element_found;
+    return has_removed_element;
 }
 
-// Merge two sorted lists, but keep only 'max_elements' or less elements and
-// store values only grater than 'greater_than'. Rest of the lists content is
-// freed.
 struct List *
 listMergeSortedLists(struct List *self, struct List *other, int greater_than, int max_elements)
 {
+#ifdef DEBUG
     assert(listIsSorted(self));
     assert(listIsSorted(other));
+#endif
 
     struct List *res = malloc(sizeof(struct List));
     (* res) = (struct List){ NULL, NULL };
@@ -251,98 +282,14 @@ listMergeSortedLists(struct List *self, struct List *other, int greater_than, in
     // TODO: REFACTOR THE list API?
     free(self);
     free(other);
-
     self = NULL;
     other = NULL;
 
     return res;
 }
 
-void listFree(struct List* list)
-{
-    if (!list)
-        assert(!"List pointer cannot be NULL!");
-#if 0
-    struct ListNode *current = list->head;
-    while (current != NULL)
-    {
-        struct ListNode *next = current->next;
-        if (next == NULL)
-            assert(current == list->tail);
-
-        free(current);
-
-        current = next;
-    }
-#else
-    /* listForeach(list, (void (*) (struct ListNode *))free); */
-    listForeach(list,curr, { free(curr); });
-#endif
-    free(list);
-    list = NULL;
-}
-
-// Removes the node [el] from the list.
-void
-listRemoveNode(struct List *list, struct ListNode *el)
-{
-    // If this is the only element in the list:
-    if (!el->prev && !el->next)
-    {
-        list->head = NULL;
-        list->tail = NULL;
-    }
-    // If this is a first one:
-    else if (!el->prev)
-    {
-        list->head = el->next;
-        el->next->prev = NULL;
-    }
-    // If this si a last one:
-    else if (!el->next)
-    {
-        list->tail = el->prev;
-        el->prev->next = NULL;
-    }
-    else
-    {
-        el->prev->next = el->next;
-        el->next->prev = el->prev;
-    }
-
-    free(el);
-}
-
-// Removes ALL ocurrences of 'value_to_remove' from the 'list'.
-int listRemoveElement(struct List* list, int value_to_remove)
-{
-    if (!list)
-        assert(!"List pointer cannot be NULL!");
-
-    int has_removed_element = 0;
-    struct ListNode *current = list->head;
-
-    while (current != NULL)
-    {
-        struct ListNode *next = current->next;
-        if (next == NULL)
-            assert(current == list->tail);
-
-        if (current->value == value_to_remove)
-        {
-            listRemoveNode(list, current);
-            has_removed_element = 1;
-        }
-
-        current = next;
-    }
-
-    return has_removed_element;
-}
-
 #ifdef DEBUG
 
-// 1 if given list is sorted in NON-INCREASING order, else 0.
 int listIsSorted(const struct List* list)
 {
     // Empty list is sorted.
@@ -360,11 +307,6 @@ int listIsSorted(const struct List* list)
     }
 
     return 1;
-}
-
-void listPrintContent(const struct List* list)
-{
-    listForeach(list,curr, { printf("%d ", curr->value); });
 }
 
 #endif
