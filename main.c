@@ -1,20 +1,26 @@
+// Mateusz Dudziński
+// IPP, 2018L Task: "Maraton filmowy".
 #include <stdio.h>
 #include <assert.h>
 #include <malloc.h>
 #include <stdlib.h>
 #include <limits.h>
 
+#include "linked_list.h"
+#include "tree.h"
+
 // Unix line ending character.
 #define COMMENT_LINE '#'
 
 // Max size of a VALID input line.
-#define MAX_INPUT_LINE_LENGTH 32
+#define MAX_INPUT_LINE_LENGTH (32)
+
+const int MAX_MOVIE_RATING = 2147483647;
+const int MAX_K = 2147483647;
 
 // Return values of readInputLine function:
-#define INPUT_EOF (-1)
-#define INPUT_IGNORED_LINE (0)
-#define INPUT_INVALID (-2)
-#define INPUT_OK (1)
+enum input_feedback { INPUT_EOF, INPUT_IGNORED_LINE, INPUT_INVALID, INPUT_OK };
+typedef enum input_feedback input_feedback_t;
 
 enum operation { ADD_USER, DEL_USER, ADD_MOVIE, DEL_MOVIE, MARATHON };
 typedef enum operation operation_t;
@@ -24,16 +30,23 @@ void printError()
     fprintf(stderr, "ERROR\n");
 }
 
+// 1 if 'min <= value <= max', 0 in other case.
+int inRange(const int min, const int max, const int value)
+{
+    assert(min <= max);
+    return (min <= value && value <= max);
+}
+
 // Convert number stored as array of chars into int32.
 int stringToInt32(const char *str, int len)
 {
-    if (len > 10 || len <= 0)
+    if (!inRange(1, 10, len))
         return -1;
 
     int res = 0;
     for (int i = 0; i < len; ++i)
     {
-        assert('0' <= str[i] && str[i] <= '9');
+        assert(inRange('0', '9', str[i]));
 
         // Check borders when we are close to INT_MAX.
         if (i == 9 && (res > INT_MAX / 10
@@ -63,8 +76,7 @@ int prefixMatch(const char *text, const char *pattern)
 int readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
 {
     int letters_read = 0;
-    while ('0' <= buffer[(* idx_in_buffer) + letters_read]
-        && buffer[(* idx_in_buffer) + letters_read] <= '9')
+    while (inRange('0', '9', buffer[(* idx_in_buffer) + letters_read]))
     {
         ++letters_read;
     }
@@ -84,9 +96,8 @@ int readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
 // identyfikatorze [userId]. Operacja ma się wykonywać w czasie stałym.
 void addUser (int parentUserId, int userId)
 {
-    if (userId) userId++;
-    if (parentUserId) parentUserId++;
-    assert(!"Requested feature is not implemented!");
+    if (!treeAddNode(userId, parentUserId))
+        printError();
 }
 
 // Użytkownik o identyfikatorze [userId] wypisuje się. Dodane przez niego
@@ -97,8 +108,8 @@ void addUser (int parentUserId, int userId)
 // preferencji usuwanego użytkownika.
 void delUser (int userId)
 {
-    if (userId) userId++;
-    assert(!"Requested feature is not implemented!");
+    if (!treeDelNode(userId))
+        printError();
 }
 
 // Użytkownik o identyfikatorze [userId] dodaje film o identyfikatorze
@@ -107,9 +118,8 @@ void delUser (int userId)
 // dodaje film.
 void addMovie (int userId, int movieRating)
 {
-    if (userId) userId++;
-    if (movieRating) movieRating++;
-    assert(!"Requested feature is not implemented!");
+    if (!treeAddPreference(userId, movieRating))
+        printError();
 }
 
 // Użytkownik o identyfikatorze [userId] usuwa film o identyfikatorze
@@ -118,9 +128,8 @@ void addMovie (int userId, int movieRating)
 // usuwa film.
 void delMovie (int userId, int movieRating)
 {
-    if (userId) userId++;
-    if (movieRating) movieRating++;
-    assert(!"Requested feature is not implemented!");
+    if (!treeRemovePreference(userId, movieRating))
+        printError();
 }
 
 // Wyznacza co najwyżej [k] identyfikatorów filmów o najwyższych ocenach
@@ -132,9 +141,10 @@ void delMovie (int userId, int movieRating)
 // maksymalnej oceny filmu spośród preferencji użytkownika userId.
 void marathon (int userId, int k)
 {
-    if (userId) userId++;
-    if (k) k++;
-    assert(!"Requested feature is not implemented!");
+    printf("Marathon on tree:\n");
+    printTree();
+
+    
 }
 
 // [MAX_INPUT_LINE_LENGTH] characters is more than enought for valid,
@@ -202,13 +212,158 @@ int readInputLine()
     }
 }
 
-int main()
+void executeComamnd(operation_t call, int* args)
 {
+    switch(call)
+    {
+    case ADD_USER:
+    {
+        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_USERS, args[1]))
+        {
+            // ERROR: argument(s) out of range.
+            printError();
+        }
+
+        addUser(args[0], args[1]);
+    } break;
+
+    case DEL_USER:
+    {
+        if (!inRange(0, MAX_USERS, args[0]))
+        {
+            // ERROR: argument(s) out of range.
+            printError();
+        }
+
+        delUser(args[0]);
+    } break;
+
+    case ADD_MOVIE:
+    {
+        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_MOVIE_RATING, args[1]))
+        {
+            // ERROR: argument(s) out of range.
+            printError();
+        }
+
+        addMovie(args[0], args[1]);
+    } break;
+
+    case DEL_MOVIE:
+    {
+        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_MOVIE_RATING, args[1]))
+        {
+            // ERROR: argument(s) out of range.
+            printError();
+        }
+
+        delMovie(args[0], args[1]);
+    } break;
+
+    case MARATHON:
+    {
+        if (!inRange(0, MAX_USERS, args[0]) || !inRange(0, MAX_K, args[1]))
+        {
+            // ERROR: argument(s) out of range.
+            printError();
+        }
+
+        // TODO: Check if:
+        // *) args[0] exist in the tree.
+        marathon(args[0], args[1]);
+    } break;
+    }
+}
+
+int main (void)
+{
+// TODO: Remove or move to the test.
+#ifdef DEBUG
+    {
+        // Some tests for the lists.
+        struct List *my_list = malloc(sizeof(struct List)),
+            *my_other_list = malloc(sizeof(struct List));
+
+        if (!my_list || !my_other_list)
+            exit(1);
+
+        listPushBack(my_list, 12);
+        listPushBack(my_list, 8);
+        listPushBack(my_list, 5);
+        /* listPushBack(my_list, 2); */
+        /* listPushBack(my_list, 1); */
+        listInsertMaintainSortOrder(my_list, 3);
+        listInsertMaintainSortOrder(my_list, 3);
+        listInsertMaintainSortOrder(my_list, 18);
+        assert(listRemoveElement(my_list, 5));
+        assert(listRemoveElement(my_list, 18));
+        assert(listRemoveElement(my_list, 12));
+        assert(listRemoveElement(my_list, 8));
+        assert(listRemoveElement(my_list, 3));
+        assert(listEmpty(my_list));
+
+        listPushBack(my_other_list, 0);
+        listPushBack(my_other_list, -1);
+        listPushBack(my_other_list, -5);
+        listPushBack(my_other_list, -20);
+        listPushBack(my_other_list, -1236);
+        assert(!listRemoveElement(my_other_list, 1));
+
+        printf("My list: ");
+        listPrintContent(my_list);
+        printf("\n");
+        assert(listIsSorted(my_list));
+
+        printf("Other list: ");
+        listPrintContent(my_other_list);
+        printf("\n");
+        assert(listIsSorted(my_list));
+
+        listConcat(my_list, my_other_list);
+
+        printf("\nAfter concat:\n");
+        printf("My list: ");
+        listPrintContent(my_list);
+        printf("\n");
+        assert(listIsSorted(my_list));
+
+        printf("Other list: ");
+        listPrintContent(my_other_list);
+        printf("\n");
+        assert(listIsSorted(my_list));
+
+        listFree(my_list);
+        free(my_other_list);
+
+        // Tree tests:
+        initTree();
+
+        treeAddNode(1, 0);
+        treeAddNode(2, 1);
+        treeAddNode(4, 1);
+        treeAddNode(7, 1);
+        treeAddNode(10, 1);
+        treeAddNode(3, 2);
+        treeAddNode(5, 2);
+        treeAddNode(6, 0);
+        treeAddNode(8, 0);
+
+        printTree();
+
+        treeDelNode(1);
+        printTree();
+
+        freeTree();
+    }
+#endif
+
+    initTree();
     int read_line_state = 0;
     while ((read_line_state = readInputLine()) != INPUT_EOF)
     {
         if (read_line_state == INPUT_INVALID)
         {
+            // ERROR: Invalid input.
             printError();
             continue;
         }
@@ -219,8 +374,8 @@ int main()
         else if (read_line_state == INPUT_OK)
         {
             int idx_in_buffer = 0;
-            while (('A' <= input_buffer[idx_in_buffer] && input_buffer[idx_in_buffer] <= 'Z')
-                || ('a' <= input_buffer[idx_in_buffer] && input_buffer[idx_in_buffer] <= 'z'))
+            while (inRange('A', 'Z', input_buffer[idx_in_buffer])
+                || inRange('a', 'z', input_buffer[idx_in_buffer]))
             {
                 ++idx_in_buffer;
             }
@@ -284,6 +439,8 @@ int main()
                 }
             } break;
             }
+
+            executeComamnd(op, args);
         }
         else
         {
@@ -291,5 +448,6 @@ int main()
         }
     }
 
+    freeTree();
     return 0;
 }
