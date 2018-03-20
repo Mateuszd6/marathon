@@ -2,7 +2,6 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -std=c11 -O2
 DEBUG_FLAGS=-Wall -Wextra -Wshadow -std=c11 -g -Og -DDEBUG
-
 # Find all target .o files based on .c files.
 OBJECTS=$(shell for i in *.c; do echo "$${i%.c}.o" ; done)
 
@@ -14,6 +13,7 @@ debug: all
 debug: post_hook
 
 all: $(OBJECTS)
+	@mkdir -p bin/
 	$(CC) $(OBJECTS) -o bin/program
 all: post_hook
 
