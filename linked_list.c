@@ -1,5 +1,6 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
+
 #include <stdlib.h>
 #include <malloc.h>
 // Dont include asserts in the release build.

@@ -1,5 +1,6 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
+
 #include <stdio.h>
 #include <malloc.h>
 #include <stdlib.h>

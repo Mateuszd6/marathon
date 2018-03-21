@@ -1,5 +1,6 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
+
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h> // for memeset

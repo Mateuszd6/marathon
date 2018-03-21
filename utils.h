@@ -1,3 +1,6 @@
+// Mateusz Dudziński
+// IPP, 2018L Task: "Maraton filmowy".
+
 #ifndef UTILS_H
 #define UTILS_H
 

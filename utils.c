@@ -1,3 +1,6 @@
+// Mateusz Dudziński
+// IPP, 2018L Task: "Maraton filmowy".
+
 #include <limits.h>
 // Dont include asserts in the release build.
 #if !defined DEBUG
