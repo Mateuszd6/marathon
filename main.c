@@ -400,6 +400,16 @@ main(void)
     }
 #endif
 
+    // TODO: JUST REMOVE IT LATER.
+    {
+        int *trap = malloc(sizeof(int) * 40);
+        trap[9] = rand() % 2;
+        if (trap[9] == 3)
+            exit(0);
+
+        printf("Trap!\n");
+    }
+
     initTree();
     int read_line_state = 0;
     while ((read_line_state = readInputLine()) != INPUT_EOF)

@@ -6,6 +6,38 @@
 DIRECTORY=./tests
 PROGRAM=./bin/program
 
+CHECK_FOR_MEM_LEAKS=true
+
+printGood() {
+    echo -e "\e[1;32m$1\e[0m"
+}
+
+printBad() {
+    echo -e "\e[1;31m$1\e[0m"
+}
+
+yesNoConfirm() {
+    if [ $# -eq 0 ]; then PROMPT="Continue?"; else PROMPT=$1; fi
+
+    read -p "$PROMPT [Y/n]? " CONT
+    if [ "$CONT" = "n" ] || [ "$CONT" = "N" ] \
+           || [ "$CONT" = "no" ] || [ "$CONT" = "No" ]; then
+        false
+    else
+        true
+    fi
+}
+
+# Check if specyfied program and direcotory are valid:
+if [ ! -f $PROGRAM ]; then
+    echo $PROGRAM " does not exist. Exitting..."
+    exit 2
+fi
+if [ ! -d $DIRECTORY ]; then
+    echo $DIRECTORY " does not exist. Exitting..."
+    exit 2
+fi
+
 for i in $(ls $DIRECTORY | egrep -i '*.in'); do
 
     # Alias these variables to make it more readable.
@@ -32,5 +64,50 @@ for i in $(ls $DIRECTORY | egrep -i '*.in'); do
         continue
     fi
 
-    
+    # TODO: Collapse differs!!!
+    echo -n "Comparing standard output... "
+    if diff my_out.out $OUTPUT &> /dev/null; then
+        printGood "OK"
+    else
+        printBad "DIFFERS!"
+        if yesNoConfirm "Show diff?"; then
+            diff --color my_out.out $OUTPUT
+            if yesNoConfirm "Abort testing?"; then
+                exit 1
+            fi
+        fi
+    fi
+
+    echo -n "Comparing stderr output... "
+    if diff my_out.err $ERR &> /dev/null; then
+        printGood "OK"
+    else
+        printBad "DIFFERS!"
+        if yesNoConfirm "Show diff?"; then
+            diff --color my_out.err $ERR
+            if yesNoConfirm "Abort testing?"; then
+                exit 1
+            fi
+        fi
+    fi
+
+    # Unfortunetly we have to run a program again to look for memory
+    # leaks. Note: valgrind will return 1 if there are leaks, 0 when they are
+    # not. This differs from the default, when valgrind just returns programs
+    # exit code.
+    if $CHECK_FOR_MEM_LEAKS; then
+        echo -n "Checking for memory leaks... "
+        if valgrind --leak-check=full --log-file="my_valgr.log" \
+                    --error-exitcode=1 $PROGRAM < $INPUT &> /dev/null; then
+            printGood "OK"
+        else
+            printBad "LEAKS DETECTED!"
+            if yesNoConfirm "Show Valgrind output?"; then
+                cat my_valgr.log
+                if yesNoConfirm "Abort testing?"; then
+                    exit 1
+                fi
+            fi
+        fi
+    fi
 done
