@@ -33,39 +33,6 @@ printError()
     fprintf(stderr, "ERROR\n");
 }
 
-static int
-readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
-{
-    int letters_read = 0;
-    while (inRange('0', '9', buffer[(* idx_in_buffer) + letters_read]))
-        ++letters_read;
-
-    int res_converted = stringToInt32(buffer + (* idx_in_buffer), letters_read);
-    (* idx_in_buffer) += letters_read;
-    if (res_converted != -1)
-    {
-        (* result) = res_converted;
-        return 1;
-    }
-    else
-        return 0;
-}
-
-static int
-readNumbersFromBuffer(const char *buffer, int amount, int *res)
-{
-    int idx_in_buffer = 0;
-    for (int i = 0; i < amount; ++i)
-    {
-        if (!(readInt32FromBuffer(buffer, &idx_in_buffer, res + i)))
-            return 0;
-        if (i < amount-1 && buffer[idx_in_buffer++] != ' ')
-            return 0;
-    }
-
-    return 1;
-}
-
 static void
 addUser (int parentUserId, int userId)
 {
