@@ -1,8 +1,9 @@
-# TODO: Ask if this makefile is OK; are auto dependencies allowed, etc.
 CC=gcc
 CFLAGS=-Wall -Wextra -std=c11
 DEBUG_FLAGS=-g -O0 -DDEBUG
 RELEASE_FLAGS=-O2
+
+EXECUTABLE=marathon
 
 # Find all target .o files based on .c files.
 OBJECTS=$(shell for i in *.c; do echo "$${i%.c}.o" ; done)
@@ -18,15 +19,14 @@ debug: all
 all: bin post_hook
 
 bin: $(OBJECTS)
-	@mkdir -p bin/
-	$(CC) $(OBJECTS) -o bin/program
+	$(CC) $(OBJECTS) -o $(EXECUTABLE)
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	-rm -f *.o
-	-rm -f bin/program
+	-rm -f $(EXECUTABLE)
 
 # Auto dependencies generator
 # Make a .dep file for every .c file using CC -MM
