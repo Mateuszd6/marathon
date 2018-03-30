@@ -4,7 +4,7 @@
 # IPP, 2018L Task: "Maraton filmowy".
 
 DIRECTORY=./tests
-PROGRAM=./bin/program
+PROGRAM=./marathon
 
 CHECK_FOR_MEM_LEAKS=true
 
@@ -15,6 +15,9 @@ PROGRAM_OUT=`mktemp`
 PROGRAM_ERR=`mktemp`
 PROGRAM_VALG=`mktemp`
 
+# Used many times to ask user if he wants to stop running the test suite, when
+# error has been detected. When run with: yes n | ./test.sh then program will go
+# throught all errors to the end.
 yesNoConfirm() {
     read -s -n1 -p "$1 [Y/n]?" USER_INPUT
     echo ""
@@ -26,9 +29,21 @@ yesNoConfirm() {
     fi
 }
 
-# Check if specyfied program and direcotory are valid:
-if [ ! -f $PROGRAM ]; then
-    echo $PROGRAM " does not exist. Exitting..."
+# Check the console args (program name, and default test dir). My scirpt does
+# provide defaults, even thought it was not ordered in the task description.
+if [ $# -ge 1 ]; then
+    PROGRAM=$1
+fi
+if [ $# -ge 2 ]; then
+    DIRECTORY=$2
+fi
+
+# Check if specyfied program and direcotory are valid: NOTE: The second
+# condition is when user gives e.g. marathon instead of ./marathon as a first
+# argument. Bash agreees that it is a file, but it cannot be run as command so
+# we got lots of errors in the testing code.
+if [ ! -f $PROGRAM ] || ! command -v $PROGRAM &> /dev/null; then
+    echo "$PROGRAM does not exist or is not a command to run. Exitting..."
     exit 2
 fi
 if [ ! -d $DIRECTORY ]; then
@@ -47,13 +62,9 @@ for i in ${DIRECTORY}/*.in; do
 
     # Check if correspoing .out and .err files exists.
     if [ ! -f $OUTPUT ] || [ ! -f $ERR ]; then
-        # TODO: Message about no corresponding files!
         echo "No corresponding files for test: $INPUT! Skipping..."
         continue
     fi
-
-    # TODO: Also it makes valgr output. Add info about it! Scripting test makes
-    # two temporary files $PROGRAM_OUT and $PROGRAM_ERR to store program output.
 
     TIME_START=$(date +%s.%N)
     $PROGRAM < $INPUT > $PROGRAM_OUT 2> $PROGRAM_ERR
@@ -76,7 +87,6 @@ for i in ${DIRECTORY}/*.in; do
         echo -e "Program execution            \e[1;32mOK\e[0m (Time: ${TIME_DIFF} s)"
     fi
 
-    # TODO: Collapse differs!!!
     echo -n "Comparing standard output... "
     if diff $PROGRAM_OUT $OUTPUT &> /dev/null; then
         echo -e "\e[1;32mOK\e[0m"
