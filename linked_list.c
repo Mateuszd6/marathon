@@ -1,7 +1,7 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
-#if !defined DEBUG
+#ifndef DEBUG
 #define NDEBUG
 #endif
 
@@ -240,43 +240,6 @@ listMergeSortedLists(struct List *self, struct List *other,
 
     int inserted_elements = 0;
 
-#if 0
-    while (self_curr && self_curr->value > greater_than
-        && other_curr && other_curr->value > greater_than
-        && inserted_elements < max_elements)
-    {
-        if (self_curr->value >= other_curr->value)
-        {
-            struct ListNode *next = self_curr->next;
-            listPushBackNode(res, self_curr);
-            self_curr = next;
-        }
-        else
-        {
-            struct ListNode *next = other_curr->next;
-            listPushBackNode(res, other_curr);
-            other_curr = next;
-        }
-
-        ++inserted_elements;
-    }
-
-    for(int i = 0; i < 2; ++i)
-    {
-        while (self_curr && self_curr->value > greater_than
-            && inserted_elements < max_elements)
-        {
-            struct ListNode *next = self_curr->next;
-            listPushBackNode(res, self_curr);
-            self_curr = next;
-
-            ++inserted_elements;
-        }
-
-        SWAP(self_curr, other_curr);
-    }
-#else
-    // TODO: This might leak the memory!
     while ((self_curr || other_curr) && inserted_elements < max_elements)
     {
         if (!self_curr || (other_curr && self_curr->value < other_curr->value))
@@ -304,7 +267,6 @@ listMergeSortedLists(struct List *self, struct List *other,
 
         ++inserted_elements;
     }
-#endif
 
     for (int i = 0; i < 2; ++i)
     {
@@ -314,7 +276,6 @@ listMergeSortedLists(struct List *self, struct List *other,
             free(self_curr);
             self_curr = next;
         }
-
         SWAP(self_curr, other_curr);
     }
 

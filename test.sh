@@ -36,12 +36,12 @@ if [ ! -d $DIRECTORY ]; then
     exit 2
 fi
 
-for i in $(ls $DIRECTORY | egrep -i '*.in'); do
+for i in ${DIRECTORY}/*.in; do
 
     # Alias these variables to make it more readable.
-    INPUT=$DIRECTORY/$i
-    OUTPUT=$DIRECTORY/${i%in}out
-    ERR=$DIRECTORY/${i%in}err
+    INPUT=$i
+    OUTPUT=${i%in}out
+    ERR=${i%in}err
 
     echo -e "Doing test on file: \e[1m$INPUT\e[0m"
 
@@ -147,7 +147,7 @@ rm $PROGRAM_OUT
 rm $PROGRAM_ERR
 rm $PROGRAM_VALG
 
-
+echo ""
 echo "Testing done."
 echo "Max time: $MAX_TIME_FILE ($MAX_TIME s)."
 echo "Max allocation at file: $MAX_ALLOCATION_FILE ($MAX_ALLOCATED_SIZE B)."

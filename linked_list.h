@@ -51,10 +51,11 @@ void listRemoveNode(struct List *list, struct ListNode *el);
 int listRemoveElement(struct List* list, int value_to_remove);
 
 // Merge two sorted lists, but keep only [max_elements] or less elements and
-// store values only grater than [greater_than]. Rest of the lists content is
-// freed.
+// store values only grater than [greater_than]. Both [self], and [other] lists
+// are deleted and cleared, nodes that are not in the result list are freed. No
+// additional memory for nodes in the result list is allocated.
 struct List *listMergeSortedLists(struct List *self, struct List *other,
-    int greater_than, int max_elements);
+                                  int greater_than, int max_elements);
 
 // Macro used to execute some code for each node in a list.
 #define listForeach(list,element,func_body)             \

@@ -1,7 +1,7 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
-#if !defined DEBUG
+#ifndef DEBUG
 #define NDEBUG
 #endif
 

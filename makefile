@@ -9,12 +9,11 @@ OBJECTS=$(shell for i in *.c; do echo "$${i%.c}.o" ; done)
 
 .PHONY: all release debug clean post_hook
 
-# TODO: all: above the debug: !!!
-debug: CFLAGS+=$(DEBUG_FLAGS)
-debug: all
-
 release: CFLAGS+=$(RELEASE_FLAGS)
 release: all
+
+debug: CFLAGS+=$(DEBUG_FLAGS)
+debug: all
 
 all: bin post_hook
 

@@ -1,7 +1,7 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
-#if !defined DEBUG
+#ifndef DEBUG
 #define NDEBUG
 #endif
 
@@ -23,10 +23,9 @@ const int MAX_K = 2147483647;
 
 // Return values of readInputLine function:
 enum input_feedback { INPUT_EOF, INPUT_IGNORED_LINE, INPUT_INVALID, INPUT_INVALID_AND_EOF, INPUT_OK };
-typedef enum input_feedback input_feedback_t;
 
-enum operation { ADD_USER, DEL_USER, ADD_MOVIE, DEL_MOVIE, MARATHON };
-typedef enum operation operation_t;
+// Commands that program supports.
+enum program_command { ADD_USER, DEL_USER, ADD_MOVIE, DEL_MOVIE, MARATHON };
 
 static void
 printError()
@@ -147,7 +146,7 @@ marathon (int userId, int k)
 // non-comment input lines. Comment lines are ignored, never stored in buffer.
 static char input_buffer [MAX_INPUT_LINE_LENGTH];
 
-static input_feedback_t
+static enum input_feedback
 readInputLine()
 {
     char c;
@@ -214,168 +213,6 @@ readInputLine()
 int
 main(void)
 {
-#ifdef DEBUG
-    {
-        // Some tests for the lists.
-        struct List *my_list = malloc(sizeof(struct List)),
-            *my_other_list = malloc(sizeof(struct List));
-
-        if (!my_list || !my_other_list)
-            exit(1);
-
-        (* my_list) = (struct List){ NULL, NULL };
-        (* my_other_list) = (struct List){ NULL, NULL };
-
-        listPushBack(my_other_list, 6);
-        struct List *res = listMergeSortedLists(my_list, my_other_list, 0, 9);
-        assert(listRemoveElement(res, 6));
-
-        my_list = malloc(sizeof(struct List));
-        my_other_list = malloc(sizeof(struct List));
-
-        if (!my_list || !my_other_list)
-            exit(1);
-
-        (* my_list) = (struct List){ NULL, NULL };
-        (* my_other_list) = (struct List){ NULL, NULL };
-
-        assert(listInsertMaintainSortOrder(my_list, 12));
-        listPushBack(my_list, 8);
-        listPushBack(my_list, 5);
-        /* listPushBack(my_list, 2); */
-        listPushBack(my_list, 1);
-        assert(listInsertMaintainSortOrder(my_list, 3));
-        assert(!listInsertMaintainSortOrder(my_list, 3));
-        listInsertMaintainSortOrder(my_list, 18);
-
-        printf("Lets start: ");
-        listPrintContent(my_list);
-        printf("\n");
-        assert(listRemoveElement(my_list, 1));
-        assert(listRemoveElement(my_list, 5));
-        assert(listRemoveElement(my_list, 18));
-        assert(listRemoveElement(my_list, 12));
-        assert(listRemoveElement(my_list, 8));
-        assert(listRemoveElement(my_list, 3));
-        assert(listEmpty(my_list));
-
-        listPushBack(my_other_list, 0);
-        listPushBack(my_other_list, -1);
-        listPushBack(my_other_list, -5);
-        listPushBack(my_other_list, -20);
-        listPushBack(my_other_list, -1236);
-        assert(!listRemoveElement(my_other_list, 1));
-
-        printf("My list: ");
-        listPrintContent(my_list);
-        printf("\n");
-        assert(listIsSorted(my_list));
-
-        printf("Other list: ");
-        listPrintContent(my_other_list);
-        printf("\n");
-        assert(listIsSorted(my_list));
-
-        listConcat(my_list, my_other_list);
-
-        printf("\nAfter concat:\n");
-        printf("My list: ");
-        listPrintContent(my_list);
-        printf("\n");
-        assert(listIsSorted(my_list));
-
-        printf("Other list: ");
-        listPrintContent(my_other_list);
-        printf("\n");
-        assert(listIsSorted(my_list));
-
-        listFree(my_list);
-        free(my_other_list);
-
-        // Some tests for the lists.
-        my_list = malloc(sizeof(struct List));
-        my_other_list = malloc(sizeof(struct List));
-
-        if (!my_list || !my_other_list)
-            exit(1);
-
-        (* my_list) = (struct List){ NULL, NULL };
-        (* my_other_list) = (struct List){ NULL, NULL };
-
-        listPushBack(my_list, 12);
-        listPushBack(my_list, 8);
-        listPushBack(my_list, 5);
-        listInsertMaintainSortOrder(my_list, 3);
-        listInsertMaintainSortOrder(my_list, 18);
-        assert(listRemoveElement(my_list, 5));
-
-        listPushBack(my_other_list, 11);
-        listPushBack(my_other_list, 9);
-        listPushBack(my_other_list, 6);
-        listPushBack(my_other_list, 0);
-        listPushBack(my_other_list, -1);
-        listPushBack(my_other_list, -5);
-        listPushBack(my_other_list, -20);
-        listPushBack(my_other_list, -1236);
-        assert(!listRemoveElement(my_other_list, 1));
-
-        printf("\nOnce again:\n");
-        listPrintContent(my_list);
-        printf("\n");
-        listPrintContent(my_other_list);
-        printf("\n\n");
-
-        struct List *merged = listMergeSortedLists(my_list, my_other_list, 2, 3);
-
-        printf("Merged: with 2, 3: ");
-        listPrintContent(merged);
-        printf("\n\n");
-
-        listFree(merged);
-
-        // Tree tests:
-        initTree();
-
-        treeAddNode(1, 0);
-        treeAddNode(2, 1);
-        printTree();
-        treeDelNode(1);
-        printTree();
-        treeDelNode(2);
-        printTree();
-
-        printf("================================\n");
-
-        treeAddNode(1, 0);
-        treeAddNode(2, 1);
-        treeAddNode(4, 1);
-        treeAddNode(7, 1);
-        treeAddNode(10, 1);
-        treeAddNode(3, 2);
-        treeAddNode(5, 2);
-        treeAddNode(6, 0);
-        treeAddNode(8, 0);
-
-        printTree();
-
-        treeDelNode(1);
-        printTree();
-
-        freeTree();
-    }
-#endif
-
-#if 0
-    {
-        int *trap = malloc(sizeof(int) * 40);
-        trap[9] = rand() % 2;
-        if (trap[9] == 3)
-            exit(0);
-
-        printf("Trap!\n");
-    }
-#endif
-
     initTree();
     int read_line_state = 0;
     while ((read_line_state = readInputLine()) != INPUT_EOF)
@@ -413,9 +250,10 @@ main(void)
                 continue;
             }
 
-            // Currently called operation and its arguments.
-            operation_t op;
+            // Currently called program command and its arguments.
+            enum program_command op;
             int args[2];
+
             if (prefixMatch(input_buffer, "addUser"))
                 op = ADD_USER;
             else if (prefixMatch(input_buffer, "delUser"))
