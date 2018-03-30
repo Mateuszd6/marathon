@@ -1,13 +1,13 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
-#include <malloc.h>
-#include <stdlib.h>
-#include <string.h> // for memeset
-// Dont include asserts in the release build.
 #if !defined DEBUG
 #define NDEBUG
 #endif
+
+#include <malloc.h>
+#include <stdlib.h>
+#include <string.h> // for memeset
 #include <assert.h>
 
 #include "linked_list.h"
@@ -114,7 +114,7 @@ treeAddNode(int id, int parent)
     (* childs) = (struct List) { NULL, NULL };
     (* prefs) = (struct List) { NULL, NULL };
 
-    // After a push back `parent_node->childs->tail` point to the correct node.
+    // After a push back [parent_node->childs->tail] point to the correct node.
     listPushBack(parent_node->childs, id);
     (* new_node) = (struct TreeNode) {
         id, parent,
@@ -149,8 +149,8 @@ treeDelNode(int id)
     // Free the preferences list.
     listFree(node_to_delete->preferences);
 
-    // If everything is done correctly, `node_to_delete->pos_in_childlist` is a
-    // pointer to `node_to_delete`.
+    // If everything is done correctly, [node_to_delete->pos_in_childlist] is a
+    // pointer to [node_to_delete].
     // TODO: Clarify!!
     assert(node_to_delete->pos_in_childlist->value == node_to_delete->id);
 
@@ -200,8 +200,8 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
     assert(listIsSorted(curr->preferences));
 #endif
 
-    // This value will be passed as max_value recuresively to `curr` childs. It
-    // is max of either `max_value`, or first element of the `curr->preferences`
+    // This value will be passed as max_value recuresively to [curr] childs. It
+    // is max of either [max_value], or first element of the [curr->preferences]
     // list (if one exists).
     int next_limit = curr->preferences->head ?
         MAX(max_value, curr->preferences->head->value) : max_value;
@@ -216,7 +216,7 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
     int list_size = 0;
     listForeach(res, node, { ++list_size; });
 
-    // If size of the result list is less than `k`, add from the current node
+    // If size of the result list is less than [k], add from the current node
     // preferences lists.
     listForeach(curr->preferences, node,
         {

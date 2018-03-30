@@ -1,12 +1,12 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
-#include <stdlib.h>
-#include <malloc.h>
-// Dont include asserts in the release build.
 #if !defined DEBUG
 #define NDEBUG
 #endif
+
+#include <stdlib.h>
+#include <malloc.h>
 #include <assert.h>
 
 #include "linked_list.h"
@@ -97,7 +97,7 @@ void listConcat(struct List* dest, struct List* src)
         dest->tail = src->tail;
     }
 
-    // `src` is now empty, all its elements were moved to `dest`.
+    // [src] is now empty, all its elements were moved to [dest].
     src->head = NULL;
     src->tail = NULL;
 }

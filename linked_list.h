@@ -19,22 +19,22 @@ struct List
     struct ListNode *tail;
 };
 
-// 1 if `list` is empty, else 0.
+// 1 if [list] is empty, else 0.
 int listEmpty (const struct List *list);
 
-// Print `list` content to the screen. Note: No endline char is printed.
+// Print [list] content to the screen. Note: No endline char is printed.
 void listPrintContent(const struct List* list);
 
-// Free whole `list` TODO: and a pointer itself. Possible to refactor later.
+// Free whole [list] TODO: and a pointer itself. Possible to refactor later.
 void listFree(struct List* list);
 
 // Push the given value to the end of a list. Allocates a new node and uses
-// `listPushBackNode` to add it to the list. Aborts with error code 1 if
+// [listPushBackNode] to add it to the list. Aborts with error code 1 if
 // could not allocate memeory.
 void listPushBack (struct List* list, int inserted_value);
 
-// "Copy" the content of the `src` list to the `dest`. `dest` list becomes
-// empty, and all its elements are moved to `dest`. No additional memory is
+// "Copy" the content of the [src] list to the [dest]. [dest] list becomes
+// empty, and all its elements are moved to [dest]. No additional memory is
 // allocated.
 void listConcat(struct List* dest, struct List* src);
 
@@ -43,15 +43,15 @@ void listConcat(struct List* dest, struct List* src);
 // Aborts with error code 1 if could not allocate memory.
 int listInsertMaintainSortOrder(struct List* list, int value);
 
-// Removes the node `el` from the list. This assmues that `el` is part of
-// `list`. If it is not true, behaviour is undefined!
+// Removes the node [el] from the list. This assmues that [el] is part of
+// [list]. If it is not true, behaviour is undefined!
 void listRemoveNode(struct List *list, struct ListNode *el);
 
-// Removes ALL ocurrences of `value_to_remove` from the `list`.
+// Removes ALL ocurrences of [value_to_remove] from the [list].
 int listRemoveElement(struct List* list, int value_to_remove);
 
-// Merge two sorted lists, but keep only 'max_elements' or less elements and
-// store values only grater than 'greater_than'. Rest of the lists content is
+// Merge two sorted lists, but keep only [max_elements] or less elements and
+// store values only grater than [greater_than]. Rest of the lists content is
 // freed.
 struct List *listMergeSortedLists(struct List *self, struct List *other,
     int greater_than, int max_elements);

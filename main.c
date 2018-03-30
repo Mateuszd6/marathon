@@ -1,14 +1,14 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
+#if !defined DEBUG
+#define NDEBUG
+#endif
+
 #include <stdio.h>
 #include <malloc.h>
 #include <stdlib.h>
 #include <limits.h>
-// Dont include asserts in the release build.
-#if !defined DEBUG
-#define NDEBUG
-#endif
 #include <assert.h>
 
 #include "linked_list.h"
@@ -48,8 +48,8 @@ readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
         (* result) = res_converted;
         return 1;
     }
-
-    return 0;
+    else
+        return 0;
 }
 
 static int
@@ -67,68 +67,58 @@ readNumbersFromBuffer(const char *buffer, int amount, int *res)
     return 1;
 }
 
-// Użytkownik o identyfikatorze [parentUserId] dodaje użytkownika o
-// identyfikatorze [userId]. Operacja ma się wykonywać w czasie stałym.
 static void
 addUser (int parentUserId, int userId)
 {
-    if (!treeAddNode(userId, parentUserId))
+    if (!inRange(0, MAX_USERS, parentUserId) ||
+        !inRange(0, MAX_USERS, userId) ||
+        !treeAddNode(userId, parentUserId))
         printError();
     else
         printf("OK\n");
 }
 
-// Użytkownik o identyfikatorze [userId] wypisuje się. Dodane przez niego
-// preferencje filmowe są zapominane. Użytkownicy uprzednio dodani przez
-// użytkownika [userId] stają się potomkami rodzica użytkownika
-// [userId]. Usunięcie użytkownika ma się wykonywać w czasie stałym. Zapominanie
-// preferencji filmowych ma się wykonywać w czasie liniowym względem liczby
-// preferencji usuwanego użytkownika.
 static void
 delUser (int userId)
 {
-    if (!treeDelNode(userId))
+    if (!inRange(0, MAX_USERS, userId) || !treeDelNode(userId))
         printError();
     else
+        printf("OK\n");
+}
 
-        printf("OK\n");}
-
-// Użytkownik o identyfikatorze [userId] dodaje film o identyfikatorze
-// [movieRating] do swoich preferencji filmowych. Operacja ma się wykonywać w
-// czasie co najwyżej liniowym względem liczby preferencji użytkownika, który
-// dodaje film.
 static void
 addMovie (int userId, int movieRating)
 {
-    if (!treeAddPreference(userId, movieRating))
+
+    if (!inRange(0, MAX_USERS, userId) ||
+        !inRange(0, MAX_MOVIE_RATING, movieRating) ||
+        !treeAddPreference(userId, movieRating))
         printError();
     else
         printf("OK\n");
 }
 
-// Użytkownik o identyfikatorze [userId] usuwa film o identyfikatorze
-// [movieRating] ze swoich preferencji filmowych. Operacja ma się wykonywać w
-// czasie co najwyżej liniowym względem liczby preferencji użytkownika, który
-// usuwa film.
 static void
 delMovie (int userId, int movieRating)
 {
-    if (!treeRemovePreference(userId, movieRating))
+    if (!inRange(0, MAX_USERS, userId) ||
+        !inRange(0, MAX_MOVIE_RATING, movieRating) ||
+        !treeRemovePreference(userId, movieRating))
         printError();
     else
         printf("OK\n");
 }
 
-// Wyznacza co najwyżej [k] identyfikatorów filmów o najwyższych ocenach
-// spośród:
-// 1) własnych preferencji filmowych użytkownika o identyfikatorze [userId];
-// 2) preferencji filmowych wyodrębnionych w wyniku przeprowadzenia operacji
-// [marathon] dla każdego z potomków użytkownika userId, przy czym w wynikowej
-// grupie [k] filmów znajdą się tylko takie, które mają ocenę większą od
-// maksymalnej oceny filmu spośród preferencji użytkownika userId.
 static void
 marathon (int userId, int k)
 {
+    if (!inRange(0, MAX_USERS, userId) || !inRange(0, MAX_K, k))
+    {
+        printError();
+        return;
+    }
+
 #ifdef DEBUG
     printf("Marathon on tree:\n");
     printTree();
@@ -153,9 +143,9 @@ marathon (int userId, int k)
     }
 }
 
-// `MAX_INPUT_LINE_LENGTH` characters is more than enought for valid,
+// [MAX_INPUT_LINE_LENGTH] characters is more than enought for valid,
 // non-comment input lines. Comment lines are ignored, never stored in buffer.
-char input_buffer[MAX_INPUT_LINE_LENGTH];
+static char input_buffer [MAX_INPUT_LINE_LENGTH];
 
 static input_feedback_t
 readInputLine()
@@ -188,7 +178,7 @@ readInputLine()
     default:
     {
         int buffer_size = 0;
-        // Don't forget about the first character (getchar in swtich statement).
+        // Don't forget about the first character (getchar in switch statement).
         do
         {
             // Lines must end with '\n' so the input is invalid!
@@ -203,8 +193,8 @@ readInputLine()
         }
         while ((c = getchar()) != '\n');
 
-        // `MAX_INPUT_LINE_LENGTH` is large enough to store any vaild input so
-        // the inserted line IS NOT valid.
+        // [MAX_INPUT_LINE_LENGTH] is large enough to store any vaild input so
+        // the inserted line IS NOT valid. NOTE: Trailing zeors are not supported!
         if (c != '\n')
         {
             // Skip to the end of the line and return an input error.
@@ -218,72 +208,6 @@ readInputLine()
         input_buffer[index_in_buffer] = '\0';
         return INPUT_OK;
     }
-    }
-}
-
-static void
-executeComamnd(operation_t call, int* args)
-{
-    switch(call)
-    {
-    case ADD_USER:
-    {
-        if (!inRange(0, MAX_USERS, args[0])
-            || !inRange(0, MAX_USERS, args[1]))
-        {
-            // ERROR: argument(s) out of range.
-            printError();
-        }
-
-        addUser(args[0], args[1]);
-    } break;
-
-    case DEL_USER:
-    {
-        if (!inRange(0, MAX_USERS, args[0]))
-        {
-            // ERROR: argument(s) out of range.
-            printError();
-        }
-
-        delUser(args[0]);
-    } break;
-
-    case ADD_MOVIE:
-    {
-        if (!inRange(0, MAX_USERS, args[0])
-            || !inRange(0, MAX_MOVIE_RATING, args[1]))
-        {
-            // ERROR: argument(s) out of range.
-            printError();
-        }
-
-        addMovie(args[0], args[1]);
-    } break;
-
-    case DEL_MOVIE:
-    {
-        if (!inRange(0, MAX_USERS, args[0])
-            || !inRange(0, MAX_MOVIE_RATING, args[1]))
-        {
-            // ERROR: argument(s) out of range.
-            printError();
-        }
-
-        delMovie(args[0], args[1]);
-    } break;
-
-    case MARATHON:
-    {
-        if (!inRange(0, MAX_USERS, args[0])
-            || !inRange(0, MAX_K, args[1]))
-        {
-            // ERROR: argument(s) out of range.
-            printError();
-        }
-
-        marathon(args[0], args[1]);
-    } break;
     }
 }
 
@@ -509,33 +433,50 @@ main(void)
                 continue;
             }
 
-            switch (op)
+            switch(op)
             {
             case ADD_USER:
-            case ADD_MOVIE:
-            case DEL_MOVIE:
-            case MARATHON:
             {
                 if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
-                {
-                    // ERROR: Invalid input.
                     printError();
-                    continue;
-                }
+                else
+                    addUser(args[0], args[1]);
             } break;
 
             case DEL_USER:
             {
                 if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 1, args))
-                {
-                    // ERROR: Invalid input.
                     printError();
-                    continue;
-                }
+                else
+                    delUser(args[0]);
             } break;
-            }
 
-            executeComamnd(op, args);
+
+            case ADD_MOVIE:
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    addMovie(args[0], args[1]);
+            } break;
+
+            case DEL_MOVIE:
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    delMovie(args[0], args[1]);
+            } break;
+
+            case MARATHON:
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    marathon(args[0], args[1]);
+            } break;
+
+            }
         }
         else
         {

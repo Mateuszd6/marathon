@@ -13,7 +13,7 @@ void initTree();
 // Free the tree and all related memeory that was allocated.
 void freeTree();
 
-// Add `id` as a child of `parent`. Returns 0 of failure, 1 on success.
+// Add [id] as a child of [parent]. Returns 0 of failure, 1 on success.
 // Aborts with error code 1 if could not allocate memory.
 int treeAddNode(int id, int parent);
 
@@ -21,10 +21,10 @@ int treeAddNode(int id, int parent);
 // excluding preferences list freeing.
 int treeDelNode(int id);
 
-// Add preference `value` to node `id`.
+// Add preference [value] to node [id].
 int treeAddPreference(int id, int value);
 
-// Remove preference `value` from node `id`.
+// Remove preference [value] from node [id].
 int treeRemovePreference(int id, int value);
 
 struct List *runMarathon(int root, int k);

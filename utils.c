@@ -1,11 +1,11 @@
 // Mateusz Dudziński
 // IPP, 2018L Task: "Maraton filmowy".
 
-#include <limits.h>
-// Dont include asserts in the release build.
 #if !defined DEBUG
 #define NDEBUG
 #endif
+
+#include <limits.h>
 #include <assert.h>
 
 int inRange(const int min, const int max, const int value)
@@ -16,7 +16,8 @@ int inRange(const int min, const int max, const int value)
 
 int stringToInt32(const char *str, int len)
 {
-    if (!inRange(1, 10, len))
+    // For sure in in range of int32. Dont allow for trailing zeros.
+    if (!inRange(1, 10, len) || (str[0] == '0' && len > 1))
         return -1;
 
     int res = 0;
