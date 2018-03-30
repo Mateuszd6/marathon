@@ -66,13 +66,15 @@ for i in ${DIRECTORY}/*.in; do
         continue
     fi
 
+    # Usedthis rather that time, coz i wasn't sure what will be the output of $?
     TIME_START=$(date +%s.%N)
     $PROGRAM < $INPUT > $PROGRAM_OUT 2> $PROGRAM_ERR
     PROGRAM_EXIT_CODE=$?
     TIME_END=$(date +%s.%N)
     TIME_DIFF=$(echo "$TIME_END - $TIME_START" | bc | awk '{printf "%f", $0}')
 
-    # bash dont do great job when it comes to compare floating point numbers...
+    # bash doesnt do great job when it comes to compare floating point numbers,
+    # so I used bc.
     if (( `echo "$TIME_DIFF > $MAX_TIME" | bc` )); then
         MAX_TIME="$TIME_DIFF"
         MAX_TIME_FILE=$INPUT
@@ -81,8 +83,9 @@ for i in ${DIRECTORY}/*.in; do
     if [ "$PROGRAM_EXIT_CODE" -ne "0" ]; then
         echo -n "Program execution failed with error code: "
         echo -e "\e[1;31m$PROGRAM_EXIT_CODE\e[0m"
-        # TODO: Continue testing?
-        continue
+        if ! yesNoConfirm "Continue?"; then
+            exit 1
+        fi
     else
         echo -e "Program execution            \e[1;32mOK\e[0m (Time: ${TIME_DIFF} s)"
     fi
