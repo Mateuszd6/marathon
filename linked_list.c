@@ -63,7 +63,6 @@ void listFree(struct List* list)
 
     listForeach(list,curr, { free(curr); });
 
-    // TODO: Would be nice to renameto listCrear once decided not to do it here.
     free(list);
     list = NULL;
 }
@@ -158,7 +157,6 @@ int listInsertMaintainSortOrder(struct List* list, int value)
         listPushBackNode(list, new_node);
         value_inserted = 1;
     }
-    // TODO: Weird, change the behaviour!!!
     else if (!value_inserted && value_already_in_list)
     {
         free(new_node);
@@ -242,6 +240,7 @@ listMergeSortedLists(struct List *self, struct List *other,
 
     while ((self_curr || other_curr) && inserted_elements < max_elements)
     {
+        // Make it so that self_curr is always the one to add right now.
         if (!self_curr || (other_curr && self_curr->value < other_curr->value))
         {
             SWAP(self_curr, other_curr);
@@ -268,6 +267,7 @@ listMergeSortedLists(struct List *self, struct List *other,
         ++inserted_elements;
     }
 
+    // We dont need the rest of the conents, so we clear them.
     for (int i = 0; i < 2; ++i)
     {
         while (self_curr)
@@ -279,7 +279,6 @@ listMergeSortedLists(struct List *self, struct List *other,
         SWAP(self_curr, other_curr);
     }
 
-    // TODO: REFACTOR THE list API?
     free(self);
     free(other);
     self = NULL;

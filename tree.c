@@ -14,7 +14,6 @@
 #include "tree.h"
 #include "utils.h"
 
-const int MAX_USERS = 65535;
 
 struct TreeNode
 {
@@ -27,36 +26,30 @@ struct TreeNode
     struct ListNode *pos_in_childlist;
 };
 
-static struct TreeNode** tree_nodes;
-
-static void
-allocateTreeNodesArr()
-{
-    tree_nodes = malloc(sizeof(struct TreeNode *) * (MAX_USERS+1));
-    if (!tree_nodes)
-        exit(1);
-
-    memset(tree_nodes, 0, sizeof(struct TreeNode *) * (MAX_USERS+1));
-}
-
 // Free the given node and all its childs.
 static void
-freeTreeNode(int node_id)
+freeTreeNode(struct Tree tree, int node_id)
 {
-    struct TreeNode *tree_node = tree_nodes[node_id];
+    struct TreeNode *tree_node = tree.nodes[node_id];
     assert(tree_node);
-    listForeach(tree_node->childs,curr, { freeTreeNode(curr->value); });
+    listForeach(tree_node->childs,curr, { freeTreeNode(tree, curr->value); });
 
     listFree(tree_node->preferences);
     listFree(tree_node->childs);
     free(tree_node);
-    tree_nodes[node_id] = NULL;
+    tree.nodes[node_id] = NULL;
 }
 
-void
-initTree()
+struct Tree
+initTree(int number_of_nodes)
 {
-    allocateTreeNodesArr();
+    struct TreeNode** tree_nodes =
+        malloc(sizeof(struct TreeNode *) * number_of_nodes);
+    if (!tree_nodes)
+        exit(1);
+
+    // Clear the allocatted array.
+    memset(tree_nodes, 0, sizeof(struct TreeNode *) * number_of_nodes);
 
     // Add user 0.
     struct TreeNode *root = malloc(sizeof(struct TreeNode));
@@ -67,40 +60,40 @@ initTree()
 
     (* childs) = (struct List) { NULL, NULL };
     (* preferences) = (struct List) { NULL, NULL };
-    (* root) = (struct TreeNode) {
-        0, 0,
-        preferences,
-        childs,
-        NULL
-    };
+    (* root) = (struct TreeNode) { 0, 0, preferences, childs, NULL };
 
     tree_nodes[0] = root;
+
+    struct Tree res = { tree_nodes, number_of_nodes };
+    return res;
 }
 
 void
-freeTree()
+freeTree(struct Tree tree)
 {
-    freeTreeNode(0);
-    free(tree_nodes);
+    freeTreeNode(tree, 0);
+    free(tree.nodes);
+
+    tree.nodes = NULL;
 }
 
 int
-treeAddNode(int id, int parent)
+treeAddNode(struct Tree tree, int id, int parent)
 {
-    if (!inRange(0, MAX_USERS, id) || !inRange(0, MAX_USERS, parent))
+    if (!inRange(0, tree.size, id) || !inRange(0, tree.size, parent))
         return 0;
 
     // If node to add already exits, or parent does not:
-    if (tree_nodes[id] || !tree_nodes[parent])
+    if (tree.nodes[id] || !tree.nodes[parent])
         return 0;
 
     struct TreeNode *new_node = malloc(sizeof(struct TreeNode)),
-        *parent_node = tree_nodes[parent];
+        *parent_node = tree.nodes[parent];
 
     if (!new_node)
         exit(1);
 
-    tree_nodes[id] = new_node;
+    tree.nodes[id] = new_node;
 
 #ifdef DEBUG
     assert(!listRemoveElement(parent_node->childs, id));
@@ -117,9 +110,7 @@ treeAddNode(int id, int parent)
     // After a push back [parent_node->childs->tail] point to the correct node.
     listPushBack(parent_node->childs, id);
     (* new_node) = (struct TreeNode) {
-        id, parent,
-        prefs,
-        childs,
+        id, parent, prefs, childs,
         parent_node->childs->tail
     };
 
@@ -127,31 +118,27 @@ treeAddNode(int id, int parent)
 }
 
 int
-treeDelNode(int id)
+treeDelNode(struct Tree tree, int id)
 {
-    if (!inRange(0, MAX_USERS, id))
+    if (!inRange(0, tree.size, id))
         return 0;
 
     // It is neither possible to remove root user, nor the node that isnt there.
-    if (id == 0 || !tree_nodes[id])
+    if (id == 0 || !tree.nodes[id])
         return 0;
 
-    struct TreeNode *node_to_delete = tree_nodes[id];
-    struct TreeNode *parent = tree_nodes[node_to_delete->parent];
+    struct TreeNode *node_to_delete = tree.nodes[id];
+    struct TreeNode *parent = tree.nodes[node_to_delete->parent];
     assert(parent);
 
     listForeach(node_to_delete->childs, node,
                 {
-                    tree_nodes[node->value]->parent = parent->id;
-                        /* tree_nodes[node_to_delete->parent]->parent; */
+                    tree.nodes[node->value]->parent = parent->id;
                 });
 
     // Free the preferences list.
     listFree(node_to_delete->preferences);
 
-    // If everything is done correctly, [node_to_delete->pos_in_childlist] is a
-    // pointer to [node_to_delete].
-    // TODO: Clarify!!
     assert(node_to_delete->pos_in_childlist->value == node_to_delete->id);
 
     // Now we remove the node from the list, so is is not there anymore.
@@ -161,35 +148,35 @@ treeDelNode(int id)
 #endif
 
     // The childlist of the deleted node is appended to its parent.
-    listConcat(tree_nodes[node_to_delete->parent]->childs, node_to_delete->childs);
+    listConcat(tree.nodes[node_to_delete->parent]->childs, node_to_delete->childs);
 
     free(node_to_delete->childs);
     free(node_to_delete);
-    tree_nodes[id] = NULL;
+    tree.nodes[id] = NULL;
 
     return 1;
 }
 
 int
-treeAddPreference(int id, int value)
+treeAddPreference(struct Tree tree, int id, int value)
 {
-    if (!tree_nodes[id] || value < 0)
+    if (!tree.nodes[id] || value < 0)
         return 0;
 
-    return listInsertMaintainSortOrder(tree_nodes[id]->preferences, value);
+    return listInsertMaintainSortOrder(tree.nodes[id]->preferences, value);
 }
 
 int
-treeRemovePreference(int id, int value)
+treeRemovePreference(struct Tree tree, int id, int value)
 {
-    if (!tree_nodes[id] || value < 0)
+    if (!tree.nodes[id] || value < 0)
         return 0;
 
-    return listRemoveElement(tree_nodes[id]->preferences, value);
+    return listRemoveElement(tree.nodes[id]->preferences, value);
 }
 
 static struct List *
-marathonAux(struct TreeNode *curr, int k, int max_value)
+marathonAux(struct Tree tree, struct TreeNode *curr, int k, int max_value)
 {
     assert(curr);
 
@@ -209,7 +196,7 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
     listForeach(curr->childs, node,
         {
             struct List *partial_res;
-            partial_res = marathonAux(tree_nodes[node->value], k, next_limit);
+            partial_res = marathonAux(tree, tree.nodes[node->value], k, next_limit);
             res = listMergeSortedLists(res, partial_res, next_limit, k);
         });
 
@@ -237,34 +224,34 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
 // TODO: Refactor the name, and make sure it can return NULL if variables are
 // out of range, or just bad.
 struct List *
-runMarathon(int root, int k)
+runMarathon(struct Tree tree, int root, int k)
 {
-    if (!tree_nodes[root] || k < 0)
+    if (!tree.nodes[root] || k < 0)
         return NULL;
 
-    return marathonAux(tree_nodes[root], k, -1);
+    return marathonAux(tree, tree.nodes[root], k, -1);
 }
 
 #ifdef DEBUG
 
 static void
-printSubtree(int curr_id)
+printSubtree(struct Tree tree, int curr_id)
 {
-    struct TreeNode *curr = tree_nodes[curr_id];
+    struct TreeNode *curr = tree.nodes[curr_id];
     assert(curr);
     printf("%d [ ", curr->id);
     listForeach(curr->preferences,node, { printf("%d ", node->value); });
     printf("]: ");
     listForeach(curr->childs,node, { printf("%d ", node->value); });
     printf("\n");
-    listForeach(curr->childs,node, { printSubtree(node->value); });
+    listForeach(curr->childs,node, { printSubtree(tree, node->value); });
 }
 
 void
-printTree()
+printTree(struct Tree tree)
 {
     printf("Tree state:\n");
-    printSubtree(0);
+    printSubtree(tree, 0);
     printf("\n");
 }
 

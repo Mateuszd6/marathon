@@ -25,7 +25,7 @@ int listEmpty (const struct List *list);
 // Print [list] content to the screen. Note: No endline char is printed.
 void listPrintContent(const struct List* list);
 
-// Free whole [list] TODO: and a pointer itself. Possible to refactor later.
+// Free whole [list] (and its conents, of course).
 void listFree(struct List* list);
 
 // Push the given value to the end of a list. Allocates a new node and uses

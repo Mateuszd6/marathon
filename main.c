@@ -18,14 +18,12 @@
 // Max size of a VALID input line.
 #define MAX_INPUT_LINE_LENGTH (32)
 
+const int MAX_USERS = 65535;
 const int MAX_MOVIE_RATING = 2147483647;
 const int MAX_K = 2147483647;
 
 // Return values of readInputLine function:
 enum input_feedback { INPUT_EOF, INPUT_IGNORED_LINE, INPUT_INVALID, INPUT_INVALID_AND_EOF, INPUT_OK };
-
-// Commands that program supports.
-enum program_command { ADD_USER, DEL_USER, ADD_MOVIE, DEL_MOVIE, MARATHON };
 
 static void
 printError()
@@ -34,50 +32,50 @@ printError()
 }
 
 static void
-addUser (int parentUserId, int userId)
+addUser (struct Tree tree, int parentUserId, int userId)
 {
     if (!inRange(0, MAX_USERS, parentUserId) ||
         !inRange(0, MAX_USERS, userId) ||
-        !treeAddNode(userId, parentUserId))
+        !treeAddNode(tree, userId, parentUserId))
         printError();
     else
         printf("OK\n");
 }
 
 static void
-delUser (int userId)
+delUser (struct Tree tree, int userId)
 {
-    if (!inRange(0, MAX_USERS, userId) || !treeDelNode(userId))
+    if (!inRange(0, MAX_USERS, userId) || !treeDelNode(tree, userId))
         printError();
     else
         printf("OK\n");
 }
 
 static void
-addMovie (int userId, int movieRating)
+addMovie (struct Tree tree, int userId, int movieRating)
 {
 
     if (!inRange(0, MAX_USERS, userId) ||
         !inRange(0, MAX_MOVIE_RATING, movieRating) ||
-        !treeAddPreference(userId, movieRating))
+        !treeAddPreference(tree, userId, movieRating))
         printError();
     else
         printf("OK\n");
 }
 
 static void
-delMovie (int userId, int movieRating)
+delMovie (struct Tree tree, int userId, int movieRating)
 {
     if (!inRange(0, MAX_USERS, userId) ||
         !inRange(0, MAX_MOVIE_RATING, movieRating) ||
-        !treeRemovePreference(userId, movieRating))
+        !treeRemovePreference(tree, userId, movieRating))
         printError();
     else
         printf("OK\n");
 }
 
 static void
-marathon (int userId, int k)
+marathon (struct Tree tree, int userId, int k)
 {
     if (!inRange(0, MAX_USERS, userId) || !inRange(0, MAX_K, k))
     {
@@ -87,10 +85,11 @@ marathon (int userId, int k)
 
 #ifdef DEBUG
     printf("Marathon on tree:\n");
-    printTree();
+    printTree(tree);
 #endif
 
-    struct List *res = runMarathon(userId, k);
+    struct List *res = runMarathon(tree, userId, k);
+
     if (!res)
     {
         printError();
@@ -109,12 +108,8 @@ marathon (int userId, int k)
     }
 }
 
-// [MAX_INPUT_LINE_LENGTH] characters is more than enought for valid,
-// non-comment input lines. Comment lines are ignored, never stored in buffer.
-static char input_buffer [MAX_INPUT_LINE_LENGTH];
-
 static enum input_feedback
-readInputLine()
+readInputLine(char *buffer)
 {
     char c;
     int index_in_buffer = 0;
@@ -133,8 +128,8 @@ readInputLine()
         while ((c = getchar()) != '\n')
         {
             if (c == EOF)
-                // TODO: SHOULD THIS RETURN INPUT_INVALID_AND_EOF,
-                // or do we accept it (return INPUT_EOF)?
+                // In the task description in stands, that every proper input
+                // line is terminated with '\n', I treat this as an error.
                 return INPUT_INVALID_AND_EOF;
         }
 
@@ -143,7 +138,6 @@ readInputLine()
 
     default:
     {
-        int buffer_size = 0;
         // Don't forget about the first character (getchar in switch statement).
         do
         {
@@ -151,11 +145,10 @@ readInputLine()
             if (c == EOF)
                 return INPUT_INVALID_AND_EOF;
 
-            if (buffer_size >= MAX_INPUT_LINE_LENGTH)
+            if (index_in_buffer >= MAX_INPUT_LINE_LENGTH)
                 break;
 
-            input_buffer[index_in_buffer++] = c;
-            buffer_size++;
+            buffer[index_in_buffer++] = c;
         }
         while ((c = getchar()) != '\n');
 
@@ -171,7 +164,7 @@ readInputLine()
             return INPUT_INVALID;
         }
 
-        input_buffer[index_in_buffer] = '\0';
+        buffer[index_in_buffer] = '\0';
         return INPUT_OK;
     }
     }
@@ -180,9 +173,14 @@ readInputLine()
 int
 main(void)
 {
-    initTree();
-    int read_line_state = 0;
-    while ((read_line_state = readInputLine()) != INPUT_EOF)
+    struct Tree tree = initTree(MAX_USERS + 1);
+    enum input_feedback read_line_state = 0;
+
+    // [MAX_INPUT_LINE_LENGTH] characters is more than enought for valid,
+    // non-comment input lines. Comment lines are ignored, never stored in buffer.
+    static char input_buffer[MAX_INPUT_LINE_LENGTH];
+
+    while ((read_line_state = readInputLine(input_buffer)) != INPUT_EOF)
     {
         if (read_line_state == INPUT_INVALID)
         {
@@ -217,70 +215,51 @@ main(void)
                 continue;
             }
 
-            // Currently called program command and its arguments.
-            enum program_command op;
+            // Arguments for currently called command. None command takes > 2.
             int args[2];
 
-            if (prefixMatch(input_buffer, "addUser"))
-                op = ADD_USER;
-            else if (prefixMatch(input_buffer, "delUser"))
-                op = DEL_USER;
-            else if (prefixMatch(input_buffer, "addMovie"))
-                op = ADD_MOVIE;
-            else if (prefixMatch(input_buffer, "delMovie"))
-                op = DEL_MOVIE;
-            else if (prefixMatch(input_buffer, "marathon"))
-                op = MARATHON;
+            // Now we call a command based on what stands at the beginning of
+            // the input buffer.
+            if (prefixMatch(input_buffer, "addUser "))
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    addUser(tree, args[0], args[1]);
+            }
+            else if (prefixMatch(input_buffer, "delUser "))
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 1, args))
+                    printError();
+                else
+                    delUser(tree, args[0]);
+            }
+            else if (prefixMatch(input_buffer, "addMovie "))
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    addMovie(tree, args[0], args[1]);
+            }
+            else if (prefixMatch(input_buffer, "delMovie "))
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    delMovie(tree, args[0], args[1]);
+            }
+            else if (prefixMatch(input_buffer, "marathon "))
+            {
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
+                    printError();
+                else
+                    marathon(tree, args[0], args[1]);
+            }
             else
             {
                 // ERROR: Unrecognized opeartion.
                 printError();
                 continue;
-            }
-
-            switch(op)
-            {
-            case ADD_USER:
-            {
-                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
-                    printError();
-                else
-                    addUser(args[0], args[1]);
-            } break;
-
-            case DEL_USER:
-            {
-                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 1, args))
-                    printError();
-                else
-                    delUser(args[0]);
-            } break;
-
-
-            case ADD_MOVIE:
-            {
-                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
-                    printError();
-                else
-                    addMovie(args[0], args[1]);
-            } break;
-
-            case DEL_MOVIE:
-            {
-                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
-                    printError();
-                else
-                    delMovie(args[0], args[1]);
-            } break;
-
-            case MARATHON:
-            {
-                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
-                    printError();
-                else
-                    marathon(args[0], args[1]);
-            } break;
-
             }
         }
         else
@@ -289,6 +268,6 @@ main(void)
         }
     }
 
-    freeTree();
+    freeTree(tree);
     return 0;
 }
