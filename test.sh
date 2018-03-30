@@ -86,6 +86,9 @@ for i in ${DIRECTORY}/*.in; do
         if ! yesNoConfirm "Continue?"; then
             exit 1
         fi
+
+        # Dont compare outputs, nor mem leaks, when program execution failed.
+        continue
     else
         echo -e "Program execution            \e[1;32mOK\e[0m (Time: ${TIME_DIFF} s)"
     fi
