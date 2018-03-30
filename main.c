@@ -52,6 +52,21 @@ readInt32FromBuffer(const char *buffer, int *idx_in_buffer, int *result)
     return 0;
 }
 
+static int
+readNumbersFromBuffer(const char *buffer, int amount, int *res)
+{
+    int idx_in_buffer = 0;
+    for (int i = 0; i < amount; ++i)
+    {
+        if (!(readInt32FromBuffer(buffer, &idx_in_buffer, res + i)))
+            return 0;
+        if (i < amount-1 && buffer[idx_in_buffer++] != ' ')
+            return 0;
+    }
+
+    return 1;
+}
+
 // Użytkownik o identyfikatorze [parentUserId] dodaje użytkownika o
 // identyfikatorze [userId]. Operacja ma się wykonywać w czasie stałym.
 static void
@@ -142,7 +157,7 @@ marathon (int userId, int k)
 // non-comment input lines. Comment lines are ignored, never stored in buffer.
 char input_buffer[MAX_INPUT_LINE_LENGTH];
 
-static int
+static input_feedback_t
 readInputLine()
 {
     char c;
@@ -284,6 +299,22 @@ main(void)
         if (!my_list || !my_other_list)
             exit(1);
 
+        (* my_list) = (struct List){ NULL, NULL };
+        (* my_other_list) = (struct List){ NULL, NULL };
+
+        listPushBack(my_other_list, 6);
+        struct List *res = listMergeSortedLists(my_list, my_other_list, 0, 9);
+        assert(listRemoveElement(res, 6));
+
+        my_list = malloc(sizeof(struct List));
+        my_other_list = malloc(sizeof(struct List));
+
+        if (!my_list || !my_other_list)
+            exit(1);
+
+        (* my_list) = (struct List){ NULL, NULL };
+        (* my_other_list) = (struct List){ NULL, NULL };
+
         assert(listInsertMaintainSortOrder(my_list, 12));
         listPushBack(my_list, 8);
         listPushBack(my_list, 5);
@@ -383,6 +414,16 @@ main(void)
 
         treeAddNode(1, 0);
         treeAddNode(2, 1);
+        printTree();
+        treeDelNode(1);
+        printTree();
+        treeDelNode(2);
+        printTree();
+
+        printf("================================\n");
+
+        treeAddNode(1, 0);
+        treeAddNode(2, 1);
         treeAddNode(4, 1);
         treeAddNode(7, 1);
         treeAddNode(10, 1);
@@ -400,7 +441,7 @@ main(void)
     }
 #endif
 
-    // TODO: JUST REMOVE IT LATER.
+#if 0
     {
         int *trap = malloc(sizeof(int) * 40);
         trap[9] = rand() % 2;
@@ -409,6 +450,7 @@ main(void)
 
         printf("Trap!\n");
     }
+#endif
 
     initTree();
     int read_line_state = 0;
@@ -474,11 +516,7 @@ main(void)
             case DEL_MOVIE:
             case MARATHON:
             {
-                // If ANY of the following function fails input is invalid.
-                if (!(readInt32FromBuffer(input_buffer, &idx_in_buffer, args)
-                        && input_buffer[idx_in_buffer++] == ' '
-                        && readInt32FromBuffer(input_buffer, &idx_in_buffer, args+1)
-                        && input_buffer[idx_in_buffer++] == '\0'))
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 2, args))
                 {
                     // ERROR: Invalid input.
                     printError();
@@ -488,9 +526,7 @@ main(void)
 
             case DEL_USER:
             {
-                // If ANY of the following function fails input is invalid.
-                if (!(readInt32FromBuffer(input_buffer, &idx_in_buffer, args)
-                        && input_buffer[idx_in_buffer++] == '\0'))
+                if (!readNumbersFromBuffer(input_buffer + idx_in_buffer, 1, args))
                 {
                     // ERROR: Invalid input.
                     printError();

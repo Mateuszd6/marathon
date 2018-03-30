@@ -140,11 +140,18 @@ treeDelNode(int id)
     struct TreeNode *parent = tree_nodes[node_to_delete->parent];
     assert(parent);
 
+    listForeach(node_to_delete->childs, node,
+                {
+                    tree_nodes[node->value]->parent = parent->id;
+                        /* tree_nodes[node_to_delete->parent]->parent; */
+                });
+
     // Free the preferences list.
     listFree(node_to_delete->preferences);
 
     // If everything is done correctly, `node_to_delete->pos_in_childlist` is a
-    // pointer to the `node_to_delete`.
+    // pointer to `node_to_delete`.
+    // TODO: Clarify!!
     assert(node_to_delete->pos_in_childlist->value == node_to_delete->id);
 
     // Now we remove the node from the list, so is is not there anymore.
@@ -201,16 +208,13 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
 
     listForeach(curr->childs, node,
         {
-            res = listMergeSortedLists(res,
-                marathonAux(tree_nodes[node->value], k, next_limit),
-                k, next_limit);
+            struct List *partial_res;
+            partial_res = marathonAux(tree_nodes[node->value], k, next_limit);
+            res = listMergeSortedLists(res, partial_res, next_limit, k);
         });
 
     int list_size = 0;
-    listForeach(res, node,
-        {
-            ++list_size;
-        });
+    listForeach(res, node, { ++list_size; });
 
     // If size of the result list is less than `k`, add from the current node
     // preferences lists.
@@ -235,11 +239,10 @@ marathonAux(struct TreeNode *curr, int k, int max_value)
 struct List *
 runMarathon(int root, int k)
 {
-    assert(tree_nodes[root]); // TODO: This should return an error, not abort!
     if (!tree_nodes[root] || k < 0)
         return NULL;
 
-    return marathonAux(tree_nodes[root], k, 0);
+    return marathonAux(tree_nodes[root], k, -1);
 }
 
 #ifdef DEBUG

@@ -119,6 +119,7 @@ int listInsertMaintainSortOrder(struct List* list, int value)
 
     int value_inserted = 0,
         value_already_in_list = 0;
+
     listForeach(list,curr,
         {
             if (!value_inserted && !value_already_in_list)
@@ -157,6 +158,11 @@ int listInsertMaintainSortOrder(struct List* list, int value)
         listPushBackNode(list, new_node);
         value_inserted = 1;
     }
+    // TODO: Weird, change the behaviour!!!
+    else if (!value_inserted && value_already_in_list)
+    {
+        free(new_node);
+    }
 
     return value_inserted;
 }
@@ -176,7 +182,7 @@ void listRemoveNode(struct List *list, struct ListNode *el)
         list->head = el->next;
         el->next->prev = NULL;
     }
-    // If this si a last one:
+    // If this is a last one:
     else if (!el->next)
     {
         list->tail = el->prev;
@@ -218,7 +224,8 @@ int listRemoveElement(struct List* list, int value_to_remove)
 }
 
 struct List *
-listMergeSortedLists(struct List *self, struct List *other, int greater_than, int max_elements)
+listMergeSortedLists(struct List *self, struct List *other,
+                     int greater_than, int max_elements)
 {
 #ifdef DEBUG
     assert(listIsSorted(self));
@@ -229,10 +236,11 @@ listMergeSortedLists(struct List *self, struct List *other, int greater_than, in
     (* res) = (struct List){ NULL, NULL };
 
     struct ListNode *self_curr = self->head,
-        *other_curr = other->head;
+                    *other_curr = other->head;
 
     int inserted_elements = 0;
 
+#if 0
     while (self_curr && self_curr->value > greater_than
         && other_curr && other_curr->value > greater_than
         && inserted_elements < max_elements)
@@ -267,6 +275,36 @@ listMergeSortedLists(struct List *self, struct List *other, int greater_than, in
 
         SWAP(self_curr, other_curr);
     }
+#else
+    // TODO: This might leak the memory!
+    while ((self_curr || other_curr) && inserted_elements < max_elements)
+    {
+        if (!self_curr || (other_curr && self_curr->value < other_curr->value))
+        {
+            SWAP(self_curr, other_curr);
+            continue;
+        }
+
+        if (other_curr && self_curr->value == other_curr->value)
+        {
+            struct ListNode *next = other_curr->next;
+            free(other_curr);
+            other_curr = next;
+            continue;
+        }
+
+        assert(!other_curr || self_curr->value > other_curr->value);
+
+        if (self_curr->value <= greater_than)
+            break;
+
+        struct ListNode *next = self_curr->next;
+        listPushBackNode(res, self_curr);
+        self_curr = next;
+
+        ++inserted_elements;
+    }
+#endif
 
     for (int i = 0; i < 2; ++i)
     {
