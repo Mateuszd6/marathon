@@ -8,11 +8,10 @@ extern const int MAX_USERS;
 
 // We represent tree as an array of nodes, coz it is the only way we can access
 // any vertex in constant time.
-struct Tree
-{
-    struct TreeNode** nodes;
+struct Tree {
+  struct TreeNode **nodes;
 
-    int size;
+  int size;
 };
 
 // Inicialize the tree data scrucutre.
