@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "linked_list.h"
 #include "utils.h"
@@ -60,7 +61,7 @@ void listFree(struct List *list) {
   list = NULL;
 }
 
-void listPushBack(struct List *list, int inserted_value) {
+void listPushBack(struct List *list, int32_t inserted_value) {
   struct ListNode *new_node = malloc(sizeof(struct ListNode));
 
   // Could not allocate memory.
@@ -90,7 +91,7 @@ void listConcat(struct List *dest, struct List *src) {
   src->tail = NULL;
 }
 
-int listInsertMaintainSortOrder(struct List *list, int value) {
+int listInsertMaintainSortOrder(struct List *list, int32_t value) {
 #ifdef DEBUG
   assert(listIsSorted(list));
 #endif
@@ -167,7 +168,7 @@ void listRemoveNode(struct List *list, struct ListNode *el) {
   free(el);
 }
 
-int listRemoveElement(struct List *list, int value_to_remove) {
+int listRemoveElement(struct List *list, int32_t value_to_remove) {
   if (!list)
     assert(!"List pointer cannot be NULL!");
 
@@ -191,7 +192,7 @@ int listRemoveElement(struct List *list, int value_to_remove) {
 }
 
 struct List *listMergeSortedLists(struct List *self, struct List *other,
-                                  int greater_than, int max_elements) {
+                                  int32_t greater_than, int32_t max_elements) {
 #ifdef DEBUG
   assert(listIsSorted(self));
   assert(listIsSorted(other));

@@ -8,7 +8,8 @@
 #include <assert.h>
 #include <malloc.h>
 #include <stdlib.h>
-#include <string.h> // for memeset
+#include <string.h> // for memset
+#include <stdint.h>
 
 #include "linked_list.h"
 #include "tree.h"
@@ -36,7 +37,7 @@ static void freeTreeNode(struct Tree tree, int node_id) {
   tree.nodes[node_id] = NULL;
 }
 
-struct Tree initTree(int number_of_nodes) {
+struct Tree initTree(int32_t number_of_nodes) {
   struct TreeNode **tree_nodes =
       malloc(sizeof(struct TreeNode *) * number_of_nodes);
   if (!tree_nodes)
@@ -142,22 +143,22 @@ int treeDelNode(struct Tree tree, int id) {
   return 1;
 }
 
-int treeAddPreference(struct Tree tree, int id, int value) {
+int treeAddPreference(struct Tree tree, int id, int32_t value) {
   if (!tree.nodes[id] || value < 0)
     return 0;
 
   return listInsertMaintainSortOrder(tree.nodes[id]->preferences, value);
 }
 
-int treeRemovePreference(struct Tree tree, int id, int value) {
+int treeRemovePreference(struct Tree tree, int id, int32_t value) {
   if (!tree.nodes[id] || value < 0)
     return 0;
 
   return listRemoveElement(tree.nodes[id]->preferences, value);
 }
 
-static struct List *marathonAux(struct Tree tree, struct TreeNode *curr, int k,
-                                int max_value) {
+static struct List *marathonAux(struct Tree tree, struct TreeNode *curr,
+                                int32_t k, int32_t max_value) {
   assert(curr);
 
   struct List *res = malloc(sizeof(struct List));
@@ -197,9 +198,7 @@ static struct List *marathonAux(struct Tree tree, struct TreeNode *curr, int k,
   return res;
 }
 
-// TODO: Refactor the name, and make sure it can return NULL if variables are
-// out of range, or just bad.
-struct List *runMarathon(struct Tree tree, int root, int k) {
+struct List *runMarathon(struct Tree tree, int root, int32_t k) {
   if (!tree.nodes[root] || k < 0)
     return NULL;
 

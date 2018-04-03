@@ -4,9 +4,14 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
+#include <stdint.h>
+
 struct ListNode {
   struct ListNode *next, *prev;
-  int value;
+
+  // I used int32_t because max movie rating value is <= 2^31 and max int is
+  // guaranteed to be only greater or equal 2^16.
+  int32_t value;
 };
 
 struct List {
@@ -29,7 +34,7 @@ void listFree(struct List *list);
 // Push the given value to the end of a list. Allocates a new node and uses
 // [listPushBackNode] to add it to the list. Aborts with error code 1 if
 // could not allocate memeory.
-void listPushBack(struct List *list, int inserted_value);
+void listPushBack(struct List *list, int32_t inserted_value);
 
 // "Copy" the content of the [src] list to the [dest]. [dest] list becomes
 // empty, and all its elements are moved to [dest]. No additional memory is
@@ -40,21 +45,21 @@ void listConcat(struct List *dest, struct List *src);
 // is already there. This assumes list is sorted in NON-INCREASING order!
 // Aborts with error code 1 if could not allocate memory.
 // Returns 0 if value wasn't inserted, else 1.
-int listInsertMaintainSortOrder(struct List *list, int value);
+int listInsertMaintainSortOrder(struct List *list, int32_t value);
 
 // Removes the node [el] from the list. This assmues that [el] is part of
 // [list]. If it is not true, behaviour is undefined!
 void listRemoveNode(struct List *list, struct ListNode *el);
 
 // Removes ALL ocurrences of [value_to_remove] from the [list].
-int listRemoveElement(struct List *list, int value_to_remove);
+int listRemoveElement(struct List *list, int32_t value_to_remove);
 
 // Merge two sorted lists, but keep only [max_elements] or less elements and
 // store values only grater than [greater_than]. Both [self], and [other] lists
 // are deleted and cleared, nodes that are not in the result list are freed. No
 // additional memory for nodes in the result list is allocated.
 struct List *listMergeSortedLists(struct List *self, struct List *other,
-                                  int greater_than, int max_elements);
+                                  int32_t greater_than, int32_t max_elements);
 
 // Macro used to execute some code for each node in a list.
 #define listForeach(list, element, func_body)                                  \

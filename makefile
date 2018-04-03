@@ -1,12 +1,12 @@
 CC=gcc
 
-DEBUG_FLAGS=-Wall -Wextra -std=c11 -g -O0 -DDEBUG
+DEBUG_FLAGS=-Wall -Wextra -Wshadow -std=c11 -g -O0 -DDEBUG
 RELEASE_FLAGS=-Wall -Wextra -std=c11 -O2
 
 # 'release' is a defaul target. To build with debug 'make debug' must be called.
 CFLAGS=$(RELEASE_FLAGS)
 
-EXECUTABLE_NAME=marathon
+EXECUTABLE_NAME=main
 
 # Find all target .o files based on .c files.
 OBJECTS=$(shell for i in *.c; do echo "$${i%.c}.o" ; done)

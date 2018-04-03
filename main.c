@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <malloc.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,9 +19,9 @@
 // Max size of a VALID input line.
 #define MAX_INPUT_LINE_LENGTH (32)
 
-const int MAX_USERS = 65535;
-const int MAX_MOVIE_RATING = 2147483647;
-const int MAX_K = 2147483647;
+const int32_t MAX_USERS = 65535;
+const int32_t MAX_MOVIE_RATING = 2147483647;
+const int32_t MAX_K = 2147483647;
 
 // Return values of readInputLine function:
 enum input_feedback {
@@ -48,7 +49,7 @@ static void delUser(struct Tree tree, int userId) {
     printf("OK\n");
 }
 
-static void addMovie(struct Tree tree, int userId, int movieRating) {
+static void addMovie(struct Tree tree, int userId, int32_t movieRating) {
   if (!inRange(0, MAX_USERS, userId) ||
       !inRange(0, MAX_MOVIE_RATING, movieRating) ||
       !treeAddPreference(tree, userId, movieRating))
@@ -57,7 +58,7 @@ static void addMovie(struct Tree tree, int userId, int movieRating) {
     printf("OK\n");
 }
 
-static void delMovie(struct Tree tree, int userId, int movieRating) {
+static void delMovie(struct Tree tree, int userId, int32_t movieRating) {
   if (!inRange(0, MAX_USERS, userId) ||
       !inRange(0, MAX_MOVIE_RATING, movieRating) ||
       !treeRemovePreference(tree, userId, movieRating))
@@ -66,7 +67,7 @@ static void delMovie(struct Tree tree, int userId, int movieRating) {
     printf("OK\n");
 }
 
-static void marathon(struct Tree tree, int userId, int k) {
+static void marathon(struct Tree tree, int userId, int32_t k) {
   if (!inRange(0, MAX_USERS, userId) || !inRange(0, MAX_K, k)) {
     printError();
     return;
@@ -98,56 +99,56 @@ static enum input_feedback readInputLine(char *buffer) {
   int index_in_buffer = 0;
 
   switch (c = getchar()) {
-  case EOF:
-    return INPUT_EOF;
+    case EOF:
+      return INPUT_EOF;
 
-  case '\n':
-    return INPUT_IGNORED_LINE;
+    case '\n':
+      return INPUT_IGNORED_LINE;
 
-  // If given line is a comment, just skip to the EOL.
-  case '#': {
-    while ((c = getchar()) != '\n') {
-      if (c == EOF)
-        // In the task description in stands, that every proper input line is
-        // terminated with '\n', I treat this as an error.
-        return INPUT_INVALID_AND_EOF;
+    // If given line is a comment, just skip to the EOL.
+    case '#': {
+      while ((c = getchar()) != '\n') {
+        if (c == EOF)
+          // In the task description in stands, that every proper input line is
+          // terminated with '\n', I treat this as an error.
+          return INPUT_INVALID_AND_EOF;
+      }
+
+      return INPUT_IGNORED_LINE;
     }
 
-    return INPUT_IGNORED_LINE;
-  }
-
-  default: {
-    // Don't forget about the first character (getchar in switch statement).
-    do {
-      // Lines must end with '\n' so the input is invalid!
-      if (c == EOF)
-        return INPUT_INVALID_AND_EOF;
-
-      if (index_in_buffer >= MAX_INPUT_LINE_LENGTH)
-        break;
-
-      buffer[index_in_buffer++] = c;
-    } while ((c = getchar()) != '\n');
-
-    // [MAX_INPUT_LINE_LENGTH] is large enough to store any vaild input so the
-    // inserted line IS NOT valid. NOTE: Trailing zeors are not supported!
-    if (c != '\n') {
-      // Skip to the end of the line and return an input error.
-      while ((c = getchar()) != '\n')
+    default: {
+      // Don't forget about the first character (getchar in switch statement).
+      do {
+        // Lines must end with '\n' so the input is invalid!
         if (c == EOF)
           return INPUT_INVALID_AND_EOF;
 
-      return INPUT_INVALID;
-    }
-    buffer[index_in_buffer] = '\0';
+        if (index_in_buffer >= MAX_INPUT_LINE_LENGTH)
+          break;
 
-    // For tricky case when there is a nullbyte in the middle of the input.
-    for (int i = 0; i < index_in_buffer; ++i)
+        buffer[index_in_buffer++] = c;
+      } while ((c = getchar()) != '\n');
+
+      // [MAX_INPUT_LINE_LENGTH] is large enough to store any vaild input so the
+      // inserted line IS NOT valid. NOTE: Trailing zeors are not supported!
+      if (c != '\n') {
+        // Skip to the end of the line and return an input error.
+        while ((c = getchar()) != '\n')
+          if (c == EOF)
+            return INPUT_INVALID_AND_EOF;
+
+        return INPUT_INVALID;
+      }
+      buffer[index_in_buffer] = '\0';
+
+      // For tricky case when there is a nullbyte in the middle of the input.
+      for (int i = 0; i < index_in_buffer; ++i)
         if (buffer[i] == '\0')
-            return INPUT_INVALID;
+          return INPUT_INVALID;
 
-    return INPUT_OK;
-  }
+      return INPUT_OK;
+    }
   }
 }
 
@@ -186,7 +187,7 @@ int main(void) {
       }
 
       // Arguments for currently called command. None command takes > 2.
-      int args[2];
+      int32_t args[2];
 
       // Now we call a command based on what stands at the beginning of
       // the input buffer.

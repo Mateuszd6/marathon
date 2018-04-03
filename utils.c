@@ -6,18 +6,19 @@
 #endif
 
 #include <assert.h>
+#include <stdint.h>
 #include <limits.h>
 
 #include "utils.h"
 
 // Convert number stored as array of chars into int32. Return -1 when a numer is
 // wrong format, or is greater then INT_MAX. Trailing zeros are not supported!
-static int stringToInt32(const char *str, int len) {
+static int32_t stringToInt32(const char *str, int len) {
   // For sure in in range of int32. Dont allow for trailing zeros.
   if (!inRange(1, 10, len) || (str[0] == '0' && len > 1))
     return -1;
 
-  int res = 0;
+  int32_t res = 0;
   for (int i = 0; i < len; ++i) {
     assert(inRange('0', '9', str[i]));
 
@@ -37,7 +38,7 @@ static int stringToInt32(const char *str, int len) {
 // Read int from a [buffer], staring from [idx_in_buffer]. Store value in
 // [result]. If failed, returns 0, else 1.
 static int readInt32FromBuffer(const char *buffer, int *idx_in_buffer,
-                               int *result) {
+                               int32_t *result) {
   int letters_read = 0;
   while (inRange('0', '9', buffer[(*idx_in_buffer) + letters_read]))
     ++letters_read;
@@ -51,7 +52,7 @@ static int readInt32FromBuffer(const char *buffer, int *idx_in_buffer,
     return 0;
 }
 
-int readNumbersFromBuffer(const char *buffer, int amount, int *res) {
+int readNumbersFromBuffer(const char *buffer, int amount, int32_t *res) {
   int idx_in_buffer = 0;
   for (int i = 0; i < amount; ++i) {
     if (!(readInt32FromBuffer(buffer, &idx_in_buffer, res + i)))
@@ -66,7 +67,7 @@ int readNumbersFromBuffer(const char *buffer, int amount, int *res) {
   return 1;
 }
 
-int inRange(const int min, const int max, const int value) {
+int inRange(const int32_t min, const int32_t max, const int32_t value) {
   assert(min <= max);
   return (min <= value && value <= max);
 }

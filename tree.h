@@ -4,16 +4,18 @@
 #ifndef TREE_H
 #define TREE_H
 
+#include <stdint.h>
+
 // We represent tree as an array of nodes, coz it is the only way we can access
 // any vertex in constant time.
 struct Tree {
   struct TreeNode **nodes;
-  int size;
+  int32_t size;
 };
 
 // Inicialize the tree data scrucutre.
 // Aborts with error code 1 if could not allocate memory.
-struct Tree initTree(int size);
+struct Tree initTree(int32_t size);
 
 // Free the tree and all related memeory that was allocated.
 void freeTree(struct Tree tree);
@@ -27,12 +29,12 @@ int treeAddNode(struct Tree tree, int id, int parent);
 int treeDelNode(struct Tree tree, int id);
 
 // Add preference [value] to node [id].
-int treeAddPreference(struct Tree tree, int id, int value);
+int treeAddPreference(struct Tree tree, int id, int32_t value);
 
 // Remove preference [value] from node [id].
-int treeRemovePreference(struct Tree tree, int id, int value);
+int treeRemovePreference(struct Tree tree, int id, int32_t value);
 
-struct List *runMarathon(struct Tree tree, int root, int k);
+struct List *runMarathon(struct Tree tree, int root, int32_t k);
 
 #ifdef DEBUG
 
