@@ -108,8 +108,8 @@ static enum input_feedback readInputLine(char *buffer) {
   case '#': {
     while ((c = getchar()) != '\n') {
       if (c == EOF)
-        // In the task description in stands, that every proper input
-        // line is terminated with '\n', I treat this as an error.
+        // In the task description in stands, that every proper input line is
+        // terminated with '\n', I treat this as an error.
         return INPUT_INVALID_AND_EOF;
     }
 
@@ -129,8 +129,8 @@ static enum input_feedback readInputLine(char *buffer) {
       buffer[index_in_buffer++] = c;
     } while ((c = getchar()) != '\n');
 
-    // [MAX_INPUT_LINE_LENGTH] is large enough to store any vaild input so
-    // the inserted line IS NOT valid. NOTE: Trailing zeors are not supported!
+    // [MAX_INPUT_LINE_LENGTH] is large enough to store any vaild input so the
+    // inserted line IS NOT valid. NOTE: Trailing zeors are not supported!
     if (c != '\n') {
       // Skip to the end of the line and return an input error.
       while ((c = getchar()) != '\n')
@@ -139,8 +139,13 @@ static enum input_feedback readInputLine(char *buffer) {
 
       return INPUT_INVALID;
     }
-
     buffer[index_in_buffer] = '\0';
+
+    // For tricky case when there is a nullbyte in the middle of the input.
+    for (int i = 0; i < index_in_buffer; ++i)
+        if (buffer[i] == '\0')
+            return INPUT_INVALID;
+
     return INPUT_OK;
   }
   }

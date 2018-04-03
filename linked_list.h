@@ -39,6 +39,7 @@ void listConcat(struct List *dest, struct List *src);
 // Insert maintaining sort order of the list. This won't insert a value if one
 // is already there. This assumes list is sorted in NON-INCREASING order!
 // Aborts with error code 1 if could not allocate memory.
+// Returns 0 if value wasn't inserted, else 1.
 int listInsertMaintainSortOrder(struct List *list, int value);
 
 // Removes the node [el] from the list. This assmues that [el] is part of

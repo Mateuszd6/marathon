@@ -4,13 +4,10 @@
 #ifndef TREE_H
 #define TREE_H
 
-extern const int MAX_USERS;
-
 // We represent tree as an array of nodes, coz it is the only way we can access
 // any vertex in constant time.
 struct Tree {
   struct TreeNode **nodes;
-
   int size;
 };
 

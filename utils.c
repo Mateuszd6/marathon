@@ -56,7 +56,10 @@ int readNumbersFromBuffer(const char *buffer, int amount, int *res) {
   for (int i = 0; i < amount; ++i) {
     if (!(readInt32FromBuffer(buffer, &idx_in_buffer, res + i)))
       return 0;
-    if (i < amount - 1 && buffer[idx_in_buffer++] != ' ')
+
+    // Numbers must be separated with single space, and have a terminating
+    // \0 just after the last one.
+    if (buffer[idx_in_buffer++] != ((i < amount - 1) ? ' ' : '\0'))
       return 0;
   }
 
