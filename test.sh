@@ -41,17 +41,6 @@ fi
 if [ ! -x $PROGRAM ]; then
   echo "$PROGRAM does not exist or is not an executable file. Exitting..."
   exit 2
-  # This is a case when user enters i.eg. 'marathon' instead of './marathon',
-  # because the file does exist, but the name must be modyfied to run as a
-  # command.
-elif ! command -v $PROGRAM &> /dev/null; then
-  PROGRAM_FIXED="./"$PROGRAM
-  if ! command -v $PROGRAM_FIXED &> /dev/null; then
-    echo "$PROGRAM does exist but I can't run it as a command. Exitting..."
-    exit 2
-  else
-    PROGRAM=$PROGRAM_FIXED
-  fi
 fi
 
 if [ ! -d $DIRECTORY ]; then
