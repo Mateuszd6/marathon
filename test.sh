@@ -41,6 +41,12 @@ fi
 if [ ! -x $PROGRAM ]; then
   echo "$PROGRAM does not exist or is not an executable file. Exitting..."
   exit 2
+else
+  # If path is relative we add './' at the beggining, so when user enters
+  # 'main' instead of './main' script should work just fine anytime.
+  if [[ $PROGRAM != /* ]] && [[ $PROGRAM != ~* ]]; then
+    PROGRAM="./$PROGRAM"
+  fi
 fi
 
 if [ ! -d $DIRECTORY ]; then
@@ -48,7 +54,9 @@ if [ ! -d $DIRECTORY ]; then
   exit 2
 fi
 
-for i in ${DIRECTORY}/*.in; do
+# This will do the test for all subdirectories as well (not explicitly said in
+# the task description so I assumed this is how it should work).
+for i in ${DIRECTORY}/*.in ${DIRECTORY}/**/*.in; do
   # Alias these variables to make it more readable.
   INPUT=$i
   OUTPUT=${i%in}out
